@@ -1,0 +1,64 @@
+package kr.or.ddit.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+
+import kr.or.ddit.mapper.MberMapper;
+import kr.or.ddit.vo.MberVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class MberViewController {
+	@Autowired
+	BCryptPasswordEncoder bCryptPasswordEncoder;
+	
+	@Autowired
+	MberMapper mberMapper;
+	   
+   //1. /login 요청 URI를 요청하면 login() 메서드로 매핑됨
+   // 뷰리졸버에 의해 /WEB-INF/views/ + login + .jsp로 조립되어 forwarding
+   @GetMapping("/login")
+   public String login() {
+      log.info("java->" + bCryptPasswordEncoder.encode("qwer"));
+      
+      return "login"; //jsp
+   }   
+	   
+   //2. /signup 요청 URI를 요청하면 signup() 메서드로 매핑됨
+   // 뷰리졸버에 의해 /WEB-INF/views/ + signup + .jsp로 조립되어 forwarding
+   @GetMapping("/signup")
+   public String signup() {
+	  
+      return "signup"; //jsp
+   }
+   
+   /*
+    요청URI : /user
+   	요청파라미터 : request{email=test@test.com,password=asdf}
+   	요청방식 : post
+    */
+   
+   
+   @PostMapping("/user")
+   public String signup(MberVO mberVO) {
+	   log.info("check: signup/empVO => {}", mberVO);
+	   
+	// 비밀번호 암호화
+	    String encodedPassword = bCryptPasswordEncoder.encode(mberVO.getPassword());
+	    mberVO.setPassword(encodedPassword);
+	    log.info("check: encodedPassword=> {} ", encodedPassword);
+	    
+	   return "main";
+	   
+   }
+   
+   @GetMapping("/main")
+   public String main() {
+       return "main";  // /WEB-INF/views/main.jsp 가 존재해야 합니다.
+   }
+   
+}

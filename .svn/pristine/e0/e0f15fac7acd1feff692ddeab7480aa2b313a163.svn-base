@@ -1,0 +1,101 @@
+// visitVhcle.js 전체 코드
+
+// 모달 관련 요소
+const historyModal = document.getElementById("historyModal");
+const openHistoryBtn = document.getElementById("openHistoryModalBtn");
+const closeHistoryBtn = document.getElementById("closeHistoryModal");
+
+// 모달 열기
+if (openHistoryBtn && historyModal) {
+    openHistoryBtn.onclick = () => {
+        historyModal.style.display = "block";
+        const filterBtn = document.getElementById("filterBtn");
+        if (filterBtn) filterBtn.click();
+    };
+}
+
+// 모달 닫기
+if (closeHistoryBtn && historyModal) {
+    closeHistoryBtn.onclick = () => historyModal.style.display = "none";
+}
+
+// 모달 외부 클릭 시 닫기
+window.onclick = (e) => {
+    if (e.target === historyModal) historyModal.style.display = "none";
+};
+
+// ------------------------------
+// DOMContentLoaded 최신 코드 기준
+// ------------------------------
+document.addEventListener("DOMContentLoaded", function() {
+
+    const remainingTimeSpan = document.getElementById("remainingTime");
+    const accmltTimeSpan = document.getElementById("accmltTime");
+    const reserveForm = document.getElementById("reserveForm");
+    const reserveModalEl = document.getElementById("reserveModal");
+    const reserveModal = reserveModalEl ? bootstrap.Modal.getOrCreateInstance(reserveModalEl) : null;
+
+    // 페이지 로드 시 남은시간/누적시간 불러오기
+    fetch(`${prc}/visit/reserveData`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                remainingTimeSpan.textContent = data.remainingTime + " 시간";
+                accmltTimeSpan.textContent = data.accmltTime + " 시간";
+            } else {
+                console.warn("시간 로드 실패:", data.message);
+            }
+        })
+        .catch(err => console.error("남은시간/누적시간 로드 실패", err));
+
+    // 예약 폼 제출
+    if (reserveForm) {
+        reserveForm.onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch(`${prc}/visit/reserve`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // 남은시간/누적시간 갱신
+                    remainingTimeSpan.textContent = data.remainingTime + " 시간";
+                    accmltTimeSpan.textContent = data.accmltTime + " 시간";
+
+                    alert("예약이 완료되었습니다!");
+
+                    if (reserveModal) {
+                        reserveModal.hide();
+                    }
+                } else {
+                    alert(data.message || "예약에 실패했습니다.");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("예약 처리 중 오류가 발생했습니다.");
+            });
+        };
+    }
+
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const open = params.get("open");
+
+    // 방문차량 예약 모달 자동 실행
+    if (open === "visitVhcle") {
+
+        // 모달 열기
+        showModal("reserveModal");
+
+        // 모달 띄운 뒤 URL에서 ?open=visitVhcle 제거
+        const url = new URL(window.location.href);
+        url.searchParams.delete("open");
+        window.history.replaceState({}, "", url.toString());
+    }
+});

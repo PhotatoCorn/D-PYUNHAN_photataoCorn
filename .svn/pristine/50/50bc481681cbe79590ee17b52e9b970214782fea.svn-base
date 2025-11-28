@@ -1,0 +1,159 @@
+package kr.or.ddit.controller;
+
+import java.io.File;
+import java.io.IOException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.servlet.http.HttpServletRequest;
+import kr.or.ddit.mapper.FileMapper;
+import kr.or.ddit.service.MberService;
+import kr.or.ddit.vo.FileDetailVO;
+import kr.or.ddit.vo.FileGroupVO;
+import kr.or.ddit.vo.MberVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class MberViewController {
+
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Autowired
+    private MberService mberService;
+
+    @Autowired
+    private FileMapper fileMapper;
+
+    private static final String UPLOAD_ROOT = "D:/upload/";
+
+    
+    
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
+    }
+
+
+    @GetMapping("/signup")
+    public String signup() {
+        return "signup";
+    }
+
+    @PostMapping("/user")
+    public String signup(
+            MberVO mberVO,
+            @RequestParam(value = "profileFile", required = false) MultipartFile profileFile,
+            @RequestParam(value = "carFile", required = false) MultipartFile carFile,
+            HttpServletRequest request) throws IOException {
+
+        log.info("회원가입 요청: {}", mberVO);
+
+        // 세대 존재 여부 확인
+        boolean householdExists = mberService.checkHousehold(mberVO.getAptcmpl(), mberVO.getHo(), mberVO.getResidesttus());
+        if (!householdExists) {
+            request.setAttribute("errorMsg", "입력한 동/호수에 해당하는 세대가 존재하지 않습니다.");
+            return "signup";
+        }
+
+        // 이미 등록된 회원인지 확인
+        boolean alreadyRegistered = mberService.checkAlreadyRegistered(mberVO.getAptcmpl(), mberVO.getHo(), mberVO.getResidesttus());
+        if (alreadyRegistered) {
+            request.setAttribute("errorMsg", "이미 등록된 세대입니다. 관리자에게 문의하세요.");
+            return "signup";
+        }
+
+        // 비밀번호 암호화
+        mberVO.setPassword(bCryptPasswordEncoder.encode(mberVO.getPassword()));
+
+        // 승인 대기 상태
+        mberVO.setEnabled("0");
+
+        // 프로필 파일 업로드
+        if (profileFile != null && !profileFile.isEmpty()) {
+            long profileGroupSn = saveFileGroup(profileFile, "profile");
+            mberVO.setFileGroupSn(profileGroupSn); // VO에는 단일 컬럼만 있으므로 profile 저장
+        }
+
+        // 차량 파일 업로드
+        if (carFile != null && !carFile.isEmpty()) {
+            long carGroupSn = saveFileGroup(carFile, "car");
+            log.info("차량 파일 그룹 SN: {}", carGroupSn);
+            // VO에는 컬럼이 없으므로 DB 처리 후 로그만 남김
+        }
+
+        // 회원 등록
+        mberService.insertMember(mberVO);
+
+        // 권한 부여
+        mberService.insertMemberAuthor(mberVO);
+
+        // 세대 연결
+        mberService.insertHouseholdMember(mberVO);
+
+        // 차량 등록
+        mberService.insertVehicleRegist(mberVO);
+
+        return "login";
+    }
+
+    /** 
+     * 파일 저장 + DB 등록
+     */
+    private long saveFileGroup(MultipartFile file, String folder) throws IOException {
+        String uploadPath = UPLOAD_ROOT + folder + "/";
+        File dir = new File(uploadPath);
+        if (!dir.exists()) dir.mkdirs();
+
+        String originalName = file.getOriginalFilename();
+        String ext = getExtension(originalName);
+        String saveName = System.currentTimeMillis() + "_" + originalName;
+
+        // 실제 파일 저장
+        File dest = new File(dir, saveName);
+        file.transferTo(dest);
+
+        // FILE_GROUP insert
+        FileGroupVO groupVO = new FileGroupVO();
+        fileMapper.insertFileGroup(groupVO);
+        long fileGroupSn = groupVO.getFileGroupSn();
+
+        // FILE_DETAIL insert
+        FileDetailVO detailVO = new FileDetailVO();
+        detailVO.setFileGroupSn(fileGroupSn);
+        detailVO.setFileOrginlNm(originalName);
+        detailVO.setFileStreNm(saveName);
+        detailVO.setFileStrelc(uploadPath);
+        detailVO.setFileExtsn(ext);
+        detailVO.setFileMg(file.getSize());
+        detailVO.setFileMime(file.getContentType());
+        detailVO.setFileFancysize((file.getSize() / 1024) + " KB");
+        detailVO.setFileDowncount(0);
+
+        fileMapper.insertFileDetail(detailVO);
+
+        log.info("파일 업로드 완료: {} -> {}", originalName, uploadPath);
+        return fileGroupSn;
+    }
+
+    private String getExtension(String fileName) {
+        int idx = fileName.lastIndexOf(".");
+        return idx != -1 ? fileName.substring(idx + 1) : "";
+    }
+
+    @GetMapping("/main")
+    public String main() {
+        return "main";
+    }
+    @GetMapping("/main2")
+    public String main2() {
+    	return "main2";
+    }
+}

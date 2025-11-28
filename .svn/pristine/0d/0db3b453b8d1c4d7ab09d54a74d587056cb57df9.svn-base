@@ -1,0 +1,111 @@
+document.addEventListener("DOMContentLoaded", function () {
+	// 폼 찾기
+	(function initSearchAjax() {
+		const searchForm = document.querySelector('.manage-wrapper form');
+		if (!searchForm) return;
+
+		const ymInput   = searchForm.querySelector('input[name="ym"]');
+		const hshldEl   = searchForm.querySelector('input[name="hshldId"]');
+		const searchBtn = searchForm.querySelector('#searchBtn');
+
+		// 결과를 넣을 컨테이너가 없으면 폼 아래에 자동 생성
+		const resultDiv = document.getElementById("rqestResult");
+		if (!resultDiv) return;
+
+		const toYYYYMM = (v) => (v && v.includes('-')) ? v.replace('-', '') : v;
+		// 폼 제출 막고 fetch사용
+		searchForm.addEventListener("submit", function (e) {
+			e.preventDefault();
+			doSearch();
+		});
+
+		if (searchBtn) {
+			searchBtn.addEventListener("click", function (e) {
+				e.preventDefault();
+				doSearch();
+			});
+		}
+
+		async function doSearch() {
+			const ymRaw = ymInput ? ymInput.value : "";
+			if (!ymRaw) {
+				alert("조회할 연월을 선택하세요.");
+				return;
+			}
+
+			const ymParam = toYYYYMM(ymRaw);
+			const hshldId = hshldEl?.value ?? "";
+
+			try {
+				// JSON
+				const res = await fetch(`/rqest/listAjax?ym=${ymParam}&hshldId=${hshldId}`);
+				if (!res.ok) {
+					resultDiv.innerHTML = "<p>조회 중 오류가 발생했습니다.</p>";
+					return;
+				}
+
+				const rqestList = await res.json();
+				if (!rqestList || rqestList.length === 0) {
+					resultDiv.innerHTML = "<p>해당 월의 관리비 내역이 없습니다.</p>";
+					return;
+				}
+
+				let html = '<table class="table table-bordered mt-3">';
+				html += '<thead><tr><th>#</th><th>납부월</th><th>금액</th><th>상태</th><th>상세보기</th></tr></thead><tbody>';
+
+				rqestList.forEach((r, idx) => {
+					const statusTxt = r.status || (r.paySttusNm || "미납");
+					const isPaid    = (statusTxt === "납부완료") || (r.paySttus === "PAID");
+					const amountN   = Number(r.managectTotAmount ?? r.totalAmount ?? r.rqestAmount ?? r.amount ?? 0);
+					const amount    = amountN.toLocaleString() + "원";
+					const ymTxtRaw  = r.rqestYm ?? r.ym ?? r.yearMonth ?? ymParam;
+
+					const ymView = (String(ymTxtRaw).includes('-'))
+						? ymTxtRaw
+						: `${String(ymTxtRaw).slice(0,4)}-${String(ymTxtRaw).slice(4)}`;
+					const ymLink = String(ymTxtRaw).replace('-', '');
+
+					html += `
+					  <tr class="rqest-card">
+						<td>${idx + 1}</td>
+						<td>${ymView}</td>
+						<td>${amount}</td>
+						<td class="rqest-info">
+						  <span class="${isPaid ? 'status-paid' : 'status-unpaid'}">${isPaid ? '납부완료' : '미납'}</span>
+						</td>
+						<td>
+						  <a href="/rqest/rqest?ym=${ymLink}&hshldId=${hshldId}" class="btn btn-secondary">상세보기</a>
+						</td>
+					  </tr> 
+					  <tr>
+						<td colspan="6">
+						  <div id="detail-${r.rqestSn ?? idx}" style="display:none;"></div>
+						</td>
+					  </tr>
+					`;
+				});
+
+				html += "</tbody></table>";
+				resultDiv.innerHTML = html;
+
+				if (window.attachRqestEvents) {
+					window.attachRqestEvents(resultDiv);
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		}
+	})();
+
+	document.addEventListener("click", async function (e) {
+		const target = e.target.closest(".payBtn");
+		if (target) {
+			e.preventDefault();
+
+			const rqestSn = target.dataset.sn;
+			const amount  = Number(target.dataset.amount);
+			const ym      = target.dataset.ym;
+
+		}
+	});
+});

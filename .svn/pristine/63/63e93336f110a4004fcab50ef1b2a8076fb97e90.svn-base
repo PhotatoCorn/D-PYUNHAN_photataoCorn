@@ -1,0 +1,28 @@
+package kr.or.ddit.service;
+
+import java.util.List;
+
+import kr.or.ddit.vo.MberVO;
+
+public interface MberService {
+
+    //  회원 정보 조회
+    MberVO findByMberId(String mberId);
+
+    // 회원 가입 시 회원 정보 insert
+    void insertMember(MberVO mberVO);
+
+    // 회원 가입 시 기본 권한 insert (ROLE_GUEST)
+    void insertMemberAuthor(MberVO mberVO);
+    
+    // HSHLD_MBER_MANAGE에 세대 연결
+    void insertHouseholdMember(MberVO mberVO);
+
+    // 세대 존재 여부 체크
+	boolean checkHousehold(int aptcmpl, int ho, int residesttus);
+
+	 // 이미 등록된 회원인지 체크
+	boolean checkAlreadyRegistered(int aptcmpl, int ho, int residesttus);
+	//세대 ID 조회 후 세션에 저장
+	String selectHouseholdIdByMember(String mberId);
+}

@@ -1,0 +1,336 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="sec"
+	uri="http://www.springframework.org/security/tags"%>
+<!-- 헤더 -->
+<%@include file="../include/headerContents.jsp"%>
+<link rel="stylesheet" href="/css/main/filter.css">
+<link rel="stylesheet" href="/css/main/notice.css">
+<link rel="stylesheet" href="/css/main/noticeModal.css">
+
+<script type="text/javascript">
+		
+let noticeList = [];
+let currentIndex = -1;
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    // ✅ 1번: 공지사항 리스트 받기
+    fetch("/notice/listJson")
+        .then(resp => resp.json())
+        .then(data => {
+            noticeList = data.noticeList;
+            console.log("공지사항 리스트 로드 완료:", noticeList.length, "개");
+        })
+        .catch(error => console.log("리스트 로드 에러:", error));
+});
+
+// ✅ 2번: noticeDetail 함수 수정
+noticeDetail = function(noticeSn){
+    let data = { "noticeSn" : noticeSn }
+
+    fetch("/notice/detail", {
+        method: "post",
+        headers: { "Content-type":"application/json;charset=UTF-8" },
+        body: JSON.stringify(data)
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        const notice = data.noticeVO;
+        const fileDetailVOList = data.fileDetailVOList;
+
+        console.log("data : ",data);
+        console.log("fileDetailVOList : ", fileDetailVOList);
+
+        // ✅ 3번: 현재 인덱스 찾기 (새로 추가)
+        currentIndex = noticeList.findIndex(n => n.noticeSn === notice.noticeSn);
+
+        document.querySelector("#noticeSn").textContent = notice.noticeSn;
+        document.querySelector("#noticeSj").textContent = notice.noticeSj;
+        document.querySelector("#noticeCn").innerHTML = notice.noticeCn;
+        document.querySelector("#noticeWritngDt").textContent = new Date(notice.noticeWritngDt).toLocaleString();
+        document.querySelector("#empId").textContent = notice.nm;
+
+        let filesHtml = '';
+        if (fileDetailVOList && fileDetailVOList.length > 0) {
+            filesHtml = fileDetailVOList.map(fileDetailVO => `<img src="/upload\${fileDetailVO.fileStrelc}" style="height: 100px; margin: 5px;">`).join('');
+        } else {
+            filesHtml = '<p>첨부된 파일이 없습니다.</p>';
+        }
+        document.querySelector("#fileDetailVOList").innerHTML = filesHtml;
+
+        // ✅ 4번: 이전글/다음글 텍스트 업데이트 (새로 추가)
+        updateNavText();
+
+        new bootstrap.Modal(document.querySelector('#detailModal')).show();
+    })
+    .catch(error => console.log("에러:",error));
+}
+
+// ✅ 5번: 이전글 클릭 (새로 추가)
+function clickPrev() {
+    if (currentIndex > 0) {
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+        document.body.classList.remove('modal-open');
+        
+        noticeDetail(noticeList[currentIndex - 1].noticeSn);
+    }
+}
+
+// ✅ 6번: 다음글 클릭 (새로 추가)
+function clickNext() {
+    if (currentIndex < noticeList.length - 1) {
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+        document.body.classList.remove('modal-open');
+        
+        noticeDetail(noticeList[currentIndex + 1].noticeSn);
+    }
+}
+
+// ✅ 7번: 이전글/다음글 텍스트 업데이트 (새로 추가)
+function updateNavText() {
+    const prevSection = document.querySelector("#prevSection");
+    const nextSection = document.querySelector("#nextSection");
+    
+    if (!prevSection || !nextSection) return;
+    
+    // 이전글
+    if (currentIndex > 0) {
+        const prevNotice = noticeList[currentIndex - 1];
+        document.querySelector("#prevTitle").textContent = prevNotice.noticeSj;
+        prevSection.style.opacity = "1";
+        prevSection.style.pointerEvents = "auto";
+    } else {
+        document.querySelector("#prevTitle").textContent = "이전글 없음";
+        prevSection.style.opacity = "0.5";
+        prevSection.style.pointerEvents = "none";
+    }
+    
+    // 다음글
+    if (currentIndex < noticeList.length - 1) {
+        const nextNotice = noticeList[currentIndex + 1];
+        document.querySelector("#nextTitle").textContent = nextNotice.noticeSj;
+        nextSection.style.opacity = "1";
+        nextSection.style.pointerEvents = "auto";
+    } else {
+        document.querySelector("#nextTitle").textContent = "다음글 없음";
+        nextSection.style.opacity = "0.5";
+        nextSection.style.pointerEvents = "none";
+    }
+}
+</script>
+
+
+
+<form action="/notice/list" method="get" class="notice-filter-form">
+	<div class="filter-container">
+        <div class="filter-card">
+            <!-- 헤더 -->
+            <div class="filter-header">
+                <h3 class="filter-title">검색 필터</h3>
+                <button type="button" onclick="toggleFilter()" class="filter-toggle-btn">
+                    <span>옵션</span>
+                    <i class="fas fa-chevron-down filter-icon"></i>
+                </button>
+            </div>
+
+            <!-- 필터 본문 -->
+            <div id="filterBody" class="filter-body">
+                <!-- Row 1: 검색필드 + 정렬 -->
+                <div class="filter-row">
+                    <!-- 검색 필드 (왼쪽) -->
+                    <div class="filter-group">
+                        <label class="filter-label">검색 필드</label>
+                        <div class="filter-checkbox-group">
+                            <label class="filter-checkbox-label">
+                                <input type="checkbox" name="searchField" value="noticeSj" class="filter-checkbox" />
+                                <span>순번</span>
+                            </label>
+                            <label class="filter-checkbox-label">
+                                <input type="checkbox" name="searchField" value="noticeCn" class="filter-checkbox" />
+                                <span>제목</span>
+                            </label>
+                            <label class="filter-checkbox-label">
+                                <input type="checkbox" name="searchField" value="nm" class="filter-checkbox" />
+                                <span>내용</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 정렬 (오른쪽) -->
+                    <div class="filter-group">
+                        <label class="filter-label">정렬</label>
+                        <div class="filter-radio-group">
+                            <label class="filter-radio-label">
+                                <input type="radio" name="sortOrder" value="desc" checked class="filter-radio" />
+                                <span>최신순</span>
+                            </label>
+                            <label class="filter-radio-label">
+                                <input type="radio" name="sortOrder" value="asc" class="filter-radio" />
+                                <span>오래된순</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 구분선 -->
+                <div class="filter-divider"></div>
+
+                <!-- Row 2: 상태 + 날짜범위 -->
+                <div class="filter-row">
+                    <!-- 날짜 범위 (왼쪽) -->
+                    <div class="filter-group">
+                        <label class="filter-label">날짜 범위</label>
+                        <div class="filter-date-group">
+                            <input type="date" name="startDate" class="filter-input" value="${param.startDate}" />
+                            <span class="filter-date-separator">~</span>
+                            <input type="date" name="endDate" class="filter-input" value="${param.endDate}" />
+                        </div>
+                    </div>
+
+                    <!-- 상태 (오른쪽) -->
+                    <div class="filter-group">
+                        <label class="filter-label">상태</label>
+                        <select name="status" class="filter-select">
+                            <option value="">전체</option>
+                            <option value="1">활성</option>
+                            <option value="0">비활성</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 검색어 및 버튼 -->
+            <div class="filter-footer">
+                <input type="text" name="keyword" class="filter-search-input" placeholder="검색어를 입력해주세요" value="${keyword}" />
+                <button type="submit" class="filter-search-btn">검색</button>
+            </div>
+        </div>
+	</div>
+  </form>
+
+<script>
+function toggleFilter() {
+  const filterBody = document.getElementById('filterBody');
+  const toggleBtn = document.querySelector('.fa-chevron-down');
+  const isVisible = filterBody.style.display === 'block';
+  
+  filterBody.style.display = isVisible ? 'none' : 'block';
+  toggleBtn.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+</script>
+
+<div class="notice-container">
+    <!-- 테이블 -->
+    <div class="notice-card-body">
+        <h4 class="notice-title">입주민 공지사항</h4>
+        <div class="notice-table-wrapper">
+            <table class="notice-table">
+                <thead class="notice-table-head">
+                    <tr class="notice-header-row">
+                        <th class="notice-col-number">순번</th>
+                        <th class="notice-col-title">제목</th>
+                        <th class="notice-col-date">작성일</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <c:forEach var="noticeVO" items="${articlePage.content}">
+                        <tr class="notice-table-row" onclick="noticeDetail(${noticeVO.noticeSn})">
+                            <td class="notice-cell-number">${noticeVO.noticeSn}</td>
+                            <td class="notice-cell-title">${noticeVO.noticeSj}</td>
+                            <td class="notice-cell-date">
+                                <fmt:formatDate value="${noticeVO.noticeWritngDt}" pattern="yyyy-MM-dd" />
+                            </td>
+                        </tr>
+                    </c:forEach>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 페이징 -->
+    <div class="notice-card-footer">
+        ${articlePage.pagingArea}
+    </div>
+</div>
+
+
+<!-- ===== 상세보기 모달 시작 ===== -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down modal-lg">
+    <div class="modal-content" style="border: 0; border-radius: 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .12); overflow: hidden;">
+      
+      <!-- 헤더 -->
+      <div class="modal-header" style="background: rgba(100, 140, 164, .85); color: #fff; padding: .6rem .9rem; border: none;">
+        <h5 class="modal-title" style="font-size: 1rem; display: flex; gap: .5rem; align-items: center; margin: 0;">
+          <span>No.<span id="noticeSn" style="font-size: .85rem;">-</span></span> 
+          <span class="text-white-50">|</span> 
+          <small class="fw-normal" style="font-size: .85rem;">작성일: <span id="noticeWritngDt" style="font-size: .85rem;">-</span></small>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body" style="padding: .9rem;">
+
+        <!-- 작성자 정보 (맨 위) -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .75rem;">
+          <div style="display: flex; align-items: center; gap: .5rem;">
+            <div style="color: #6b7b86; font-size: .75rem; font-weight: 600; white-space: nowrap;">작성자</div>
+            <div id="empId" style="font-size: .85rem; font-weight: 600; color: #495057;">-</div>
+          </div>
+        </div>
+
+        <!-- 공지제목 -->
+        <div class="mb-2">
+          <div style="color: #6b7b86; font-size: .75rem; margin-bottom: .25rem; font-weight: 600;">공지제목</div>
+          <div id="noticeSj" class="form-control form-control-sm" style="display: block; background-color: #f8f9fa; padding: .375rem .75rem; border: 1px solid #dee2e6; font-size: .85rem;"></div>
+        </div>
+
+        <!-- 공지내용 -->
+        <div style="display: grid; grid-template-columns: 92px 1fr; row-gap: .35rem; column-gap: .75rem; padding: .8rem; border: 1px solid rgba(0, 0, 0, .06); border-radius: 10px; background: rgba(100, 140, 164, .12); margin-bottom: .75rem;">
+          <div style="color: #6b7b86; font-size: .75rem; font-weight: 600; align-self: start;">공지내용</div>
+          <div style="font-weight: 500;">
+            <textarea id="noticeCn" class="form-control form-control-sm" rows="5" style="resize: none; display: block; background-color: #f8f9fa; font-size: .85rem;" readonly></textarea>
+          </div>
+        </div>
+
+        <!-- 첨부파일 -->
+        <div class="mb-2">
+          <h6 style="margin: 0 0 .5rem 0; font-size: .75rem; color: #6b7b86; font-weight: 600;">첨부파일</h6>
+          <div id="fileDetailVOList" style="font-size: .85rem;"></div>
+        </div>
+      </div>
+
+      <!-- 이전글/다음글 네비게이션 -->
+      <div style="padding: .75rem; border-top: 1px solid #dee2e6; margin-bottom: .5rem;">
+        
+        <!-- 이전글 -->
+        <div id="prevSection" onclick="clickPrev()" style="padding: .6rem .75rem; border: 1px solid rgba(100, 140, 164, .2); border-radius: 8px; background: linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%); cursor: pointer; transition: all 0.3s ease; margin-bottom: .5rem; display: flex; align-items: center; gap: .5rem;" onmouseover="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .15) 0%, rgba(100, 140, 164, .1) 100%)'; this.style.borderColor='rgba(100, 140, 164, .4)'; this.style.boxShadow='0 4px 12px rgba(100, 140, 164, .15)';" onmouseout="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%)'; this.style.borderColor='rgba(100, 140, 164, .2)'; this.style.boxShadow='none';">
+          <span class="badge bg-info" style="font-size: .7rem; padding: .35rem .5rem; white-space: nowrap; flex-shrink: 0; transition: all 0.3s ease;">이전글</span>
+          <div id="prevTitle" style="font-size: .85rem; color: #2c3e50; font-weight: 500; line-height: 1.4; word-break: break-word; flex: 1; transition: color 0.3s ease;">이전글 없음</div>
+        </div>
+
+        <!-- 다음글 -->
+        <div id="nextSection" onclick="clickNext()" style="padding: .6rem .75rem; border: 1px solid rgba(100, 140, 164, .2); border-radius: 8px; background: linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: .5rem;" onmouseover="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .15) 0%, rgba(100, 140, 164, .1) 100%)'; this.style.borderColor='rgba(100, 140, 164, .4)'; this.style.boxShadow='0 4px 12px rgba(100, 140, 164, .15)';" onmouseout="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%)'; this.style.borderColor='rgba(100, 140, 164, .2)'; this.style.boxShadow='none';">
+          <span class="badge bg-info" style="font-size: .7rem; padding: .35rem .5rem; white-space: nowrap; flex-shrink: 0; transition: all 0.3s ease;">다음글</span>
+          <div id="nextTitle" style="font-size: .85rem; color: #2c3e50; font-weight: 500; line-height: 1.4; word-break: break-word; flex: 1; transition: color 0.3s ease;">다음글 없음</div>
+        </div>
+      </div>
+
+      <!-- 버튼 영역 -->
+      <div class="d-flex justify-content-end gap-2" style="padding: .9rem; border-top: 1px solid rgba(0, 0, 0, .06);">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" style="padding: .35rem .7rem; border-radius: 10px; background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057; font-weight: 500;">닫기</button>
+      </div>
+
+      <!-- 푸터 -->
+      <div class="modal-footer" style="padding: .6rem .9rem; background: #fff; border: none;"></div>
+    </div>
+  </div>
+</div>
+<!-- ===== 상세보기 모달 끝 ===== -->
+
+<%@ include file="../include/footerContents.jsp"%>

@@ -1,0 +1,21 @@
+package kr.or.ddit.mapper;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.VoteManageTrgterVO;
+import kr.or.ddit.vo.VoteMtrVO;
+@Mapper
+public interface VoteManageTrgterMapper {
+
+	//투표고르는페이지
+	public List<VoteMtrVO> memVoteList(VoteMtrVO voteMtrVO);
+	//투표할라고고르는페이지의 상세보기
+	public VoteMtrVO voteMtrList(VoteMtrVO voteMtrVO);
+	//투표하쟈
+	public int haveAVote(VoteManageTrgterVO voteManageTrgterVO);
+	
+	//투표항목+항목별 투표한사람
+	public VoteMtrVO goVotedResult(VoteMtrVO voteMtrVO);
+}

@@ -1,0 +1,88 @@
+package kr.or.ddit.controller;
+
+import java.security.Principal;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import kr.or.ddit.service.VoteManageTrgterService;
+import kr.or.ddit.vo.VoteManageTrgterVO;
+import kr.or.ddit.vo.VoteMtrVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Controller
+@Slf4j
+@RequestMapping("/vote")
+public class VoteManageTrgterController {
+
+	@Autowired
+	VoteManageTrgterService voteManageTrgterService;
+
+	@GetMapping("/memVoteList")
+	public String memVoteList(Model model, VoteMtrVO voteMtrVO) {
+		log.info("VoteMtrController -> voteMtrVO : {}", model);
+
+		List<VoteMtrVO> voteMtrVOList = this.voteManageTrgterService.memVoteList(voteMtrVO);
+		model.addAttribute("voteMtrVOList", voteMtrVOList);
+
+		log.info("VoteMtrController -> voteMtrVOList : {}", voteMtrVOList);
+
+		return "vote/memVoteList";
+	}
+
+	@GetMapping("/goVote")
+	public String voteMtrList(VoteMtrVO voteMtrVO, Model model) {
+		log.info("goVote -> voteMtrVO : {}  ", voteMtrVO);
+		VoteMtrVO resultVO = this.voteManageTrgterService.voteMtrList(voteMtrVO);
+		model.addAttribute("voteMtrVO", resultVO);
+		log.info("goVote-> voteMtrVO :", voteMtrVO);
+
+		return null;
+//		return ""; //나중에 완성되면 즈석풀거야
+	}
+
+	@PreAuthorize("hasRole('ROLE_MBER')")
+	@PostMapping("/haveAVote")
+	public String haveAVote(VoteManageTrgterVO voteManageTrgterVO, Principal principal) {
+		voteManageTrgterVO.setMberId(principal.getName());
+		log.info("haveAVote -> principal : {} ", principal); // mberId담고 체킁
+		log.info("haveAVote -> voteManageTrgterVO : {} ", voteManageTrgterVO); // mberId담고 체킁
+
+		int result = this.voteManageTrgterService.haveAVote(voteManageTrgterVO);
+		log.info("haveAVote -> voteManageTrgterVO : {} ", voteManageTrgterVO); // mberId담고 체킁
+
+		return "vote/memVoteList";
+	}
+
+	// ========================================집계====================================================================
+	// memVoteList + 투표별로 투표한사람의 숫자
+	@GetMapping("/memVoteResultList")
+	public String memVoteResultList(Model model, VoteMtrVO voteMtrVO) {
+		log.info("VoteMtrController -> voteMtrVO : {}", voteMtrVO);
+
+		List<VoteMtrVO> voteMtrVOList = this.voteManageTrgterService.memVoteList(voteMtrVO);
+		model.addAttribute("voteMtrVOList", voteMtrVOList);
+
+		log.info("VoteMtrController -> voteMtrVOList : {}", voteMtrVOList);
+
+		return "vote/memVoteResultList";
+	}
+
+	// goVote + 항목별로 투표한 사람들 숫자
+	@GetMapping("/goVotedResult")
+	public String goVotedResult(Model model, VoteMtrVO voteMtrVO) {
+		VoteMtrVO resultVO = this.voteManageTrgterService.goVotedResult(voteMtrVO);
+		
+		model.addAttribute("voteMtrVO",resultVO);
+		log.info("goVotedResult -> voteMtrVO : {}" , voteMtrVO);
+	
+	return null;
+	}
+	// ========================================집계END====================================================================
+}

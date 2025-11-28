@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.NoticeMapper">
+
+	<select id="list" parameterType="map" resultType="noticeVO">
+		SELECT *
+		FROM
+		(
+		SELECT
+		ROW_NUMBER() OVER(ORDER BY notice_sn DESC) AS rnum
+		, notice_sn
+		, notice_sj
+		, notice_cn
+		, notice_writng_dt
+		, emp_id
+		, file_group_sn
+		FROM notice
+		WHERE 1 = 1
+		<if test="keyword != null and keyword != ''">
+			AND (
+			notice_sn LIKE '%' || #{keyword} || '%' OR
+			notice_sj LIKE '%' || #{keyword} || '%' OR
+			notice_cn LIKE '%' || #{keyword} || '%' OR
+			emp_id LIKE '%' || #{keyword} || '%'
+			)
+		</if>
+		)
+		WHERE rnum BETWEEN (#{currentPage} * 10) - (10 - 1) AND (#{currentPage} *
+		10)
+	</select>
+
+	<select id="getTotal" parameterType="map" resultType="int">
+		SELECT COUNT(*)
+		FROM notice
+		WHERE 1=1
+		<if test="keyword != null and keyword != ''">
+			AND (
+			notice_sn LIKE '%' || #{keyword} || '%' OR
+			notice_sj LIKE '%' || #{keyword} || '%' OR
+			notice_cn LIKE '%' || #{keyword} || '%' OR
+			emp_id LIKE '%' || #{keyword} || '%'
+			)
+		</if>
+	</select>
+	
+	<!-- 상세 -->
+	<select id="findById" parameterType="int" resultType="noticeVO">
+		SELECT 
+			notice_sn
+		  , notice_sj
+		  , notice_cn
+		  , notice_writng_dt
+		  , emp_id
+		  , file_group_sn
+		FROM notice
+		WHERE notice_sn = #{noticeSn} 	
+	</select>
+	
+	<select id="getFileDetailVOList" parameterType="long" resultType="fileDetailVO">
+		select *
+			from file_detail
+			where file_group_sn = #{fileGroupSn}
+	</select>
+	
+</mapper>

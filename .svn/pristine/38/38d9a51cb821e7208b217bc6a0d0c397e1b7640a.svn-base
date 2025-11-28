@@ -1,0 +1,38 @@
+/* 토스트 팝업 전체 스타일 */
+.swal2-toast-custom {
+    width: 280px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15) !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+
+    /* ★ 핵심: 화면 오른쪽으로 끌어오기 */
+    position: fixed !important;
+
+    /* ★ 헤더 아래 원하는 높이 */
+    top: 70px !important; 
+
+    /* SweetAlert2 기본 위치 무효화 */
+    transform: none !important;
+    margin: 0 !important;
+}
+
+/* 아이콘(토스트 안에서만) */
+.swal2-toast-custom .swal2-icon {
+    margin-right: 6px !important;
+    transform: scale(0.7) !important;
+}
+
+/* 제목(토스트 안에서만) */
+.swal2-toast-custom .swal2-title {
+    font-size: 14px !important;
+    margin-bottom: 4px !important;
+}
+
+/* 메시지(토스트 안에서만) */
+.swal2-toast-custom .swal2-html-container {
+    font-size: 12px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}

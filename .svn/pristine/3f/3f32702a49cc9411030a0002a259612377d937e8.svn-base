@@ -1,0 +1,153 @@
+/* ------------------------------ */
+/* 방문차량예약 섹션 CSS */
+/* ------------------------------ */
+
+/* 전체 섹션 여백 */
+#vehicle {
+    padding: 2rem 0;
+
+}
+
+
+/* 방문시간 카드 */
+#visitVhcle .visit-time-card {
+    background-color: #ffffff; /* 흰색 배경 */
+    border: 3px solid rgba(100, 140, 164, 0.75); /* 파란 테두리 */
+    border-radius: 14px; /* 둥근 모서리 */
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* 그림자 */
+    padding: 1.5rem;
+    margin: 1rem 0;
+    padding: 5px !important;
+    margin: 8px !important;
+}
+
+/* 기존 내부 텍스트 유지 */
+#visitVhcle .visit-time-card .monthly-limit,
+#visitVhcle .visit-time-card .remaining-time {
+    text-align: center;
+}
+
+/* 카드 스타일 */
+#vehicle .card {
+    background-color: white;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 1.5rem 2rem;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+/* 카드 안 p 태그 정렬 */
+#vehicle .card p {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+/* 카드 구분선 */
+#vehicle .card hr {
+    border: none;
+    border-top: 1px dashed #dee2e6;
+    margin: 1rem 0;
+}
+
+/* 모달 제목 */
+#vehicle .modal-header h5 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* 모달 폼 input */
+#vehicle .modal-body input.form-control {
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+/* 모달 예약 버튼 */
+.reserve-btn.btn-primary {
+    all: unset;
+    background-color: rgba(135, 163, 179, 0.55) !important;
+    border: 2px solid #87A3B3 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    padding: 0.55rem 1.2rem !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+    display: inline-block;
+}
+
+/* 카드/리스트 hover 효과 (참조) */
+#vehicle .card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+}
+
+/* 예약 카드 이미지 배경 스타일 (참조용) */
+.js-resve-card {
+    border-radius: 14px;
+    overflow: hidden;
+    color: #fff;
+    position: relative;
+    min-height: 180px;
+    display: block;
+    background-size: cover;
+    background-position: center;
+}
+
+.js-resve-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+}
+
+.js-resve-card > div {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+    padding: 0 10px;
+}
+
+.js-resve-card .title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.js-resve-card .description {
+    font-size: 0.85rem;
+    line-height: 1.35;
+    margin: 0;
+}
+.visit-time-info {
+    font-family: 'Noto Sans KR', sans-serif;
+    color: #495057;
+    line-height: 1.6;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.visit-time-info .monthly-limit {
+    font-size: 0.95rem;
+    color: #6c757d; /* 회색 */
+}
+
+.visit-time-info .remaining-time {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #212529; /* 진한 글씨 */
+}
+
+.visit-time-info .highlight {
+    color: #1976d2; /* 강조 색상: 파란색 */
+    font-weight: 700;
+}
+

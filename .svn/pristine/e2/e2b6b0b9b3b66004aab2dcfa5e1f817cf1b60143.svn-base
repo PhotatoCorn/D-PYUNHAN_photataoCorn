@@ -1,0 +1,19 @@
+package kr.or.ddit.vo;
+
+import lombok.Data;
+
+@Data
+public class TesterVO {
+
+	private String mberId;
+	private int testerId;
+	private double numberMeal;
+	
+	public Double getTesterIdAsDouble() {
+	    return (double) testerId;
+	}
+	
+	public Double getNumberMealAsDouble() {
+		return (double) numberMeal;
+	}
+}

@@ -1,0 +1,670 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="sec"
+	uri="http://www.springframework.org/security/tags"%>
+<%@include file="../include/headerContents.jsp"%>
+<link rel="stylesheet" href="/css/main/filter.css">
+<link rel="stylesheet" href="/css/main/cvpl.css">
+
+
+
+
+<form action="/cvpl/list" method="get" class="notice-filter-form">
+	<div class="filter-container">
+		<div class="filter-card">
+			<!-- 헤더 -->
+			<div class="filter-header">
+				<h3 class="filter-title">검색 필터</h3>
+				<button type="button" onclick="toggleFilter()"
+					class="filter-toggle-btn">
+					<span>옵션</span> <i class="fas fa-chevron-down filter-icon"></i>
+				</button>
+			</div>
+
+			<!-- 필터 본문 -->
+			<div id="filterBody" class="filter-body">
+				<!-- Row 1: 검색필드 + 정렬 -->
+				<div class="filter-row">
+					<!-- 검색 필드 (왼쪽) -->
+					<div class="filter-group">
+						<label class="filter-label">검색 필드</label>
+						<div class="filter-checkbox-group">
+							<label class="filter-checkbox-label"> <input
+								type="checkbox" name="searchField" value="noticeSj"
+								class="filter-checkbox" /> <span>순번</span>
+							</label> <label class="filter-checkbox-label"> <input
+								type="checkbox" name="searchField" value="noticeCn"
+								class="filter-checkbox" /> <span>제목</span>
+							</label> <label class="filter-checkbox-label"> <input
+								type="checkbox" name="searchField" value="nm"
+								class="filter-checkbox" /> <span>내용</span>
+							</label>
+						</div>
+					</div>
+
+					<!-- 정렬 (오른쪽) -->
+					<div class="filter-group">
+						<label class="filter-label">정렬</label>
+						<div class="filter-radio-group">
+							<label class="filter-radio-label"> <input type="radio"
+								name="sortOrder" value="desc" checked class="filter-radio" /> <span>최신순</span>
+							</label> <label class="filter-radio-label"> <input type="radio"
+								name="sortOrder" value="asc" class="filter-radio" /> <span>오래된순</span>
+							</label>
+						</div>
+					</div>
+				</div>
+
+				<!-- 구분선 -->
+				<div class="filter-divider"></div>
+
+				<!-- Row 2: 상태 + 날짜범위 -->
+				<div class="filter-row">
+					<!-- 날짜 범위 (왼쪽) -->
+					<div class="filter-group">
+						<label class="filter-label">날짜 범위</label>
+						<div class="filter-date-group">
+							<input type="date" name="startDate" class="filter-input"
+								value="${param.startDate}" /> <span
+								class="filter-date-separator">~</span> <input type="date"
+								name="endDate" class="filter-input" value="${param.endDate}" />
+						</div>
+					</div>
+
+					<!-- 상태 (오른쪽) -->
+					<div class="filter-group">
+						<label class="filter-label">상태</label> <select name="status"
+							class="filter-select">
+							<option value="">전체</option>
+							<option value="1">활성</option>
+							<option value="0">비활성</option>
+						</select>
+					</div>
+				</div>
+			</div>
+
+			<!-- 검색어 및 버튼 -->
+			<div class="filter-footer">
+				<input type="text" name="keyword" class="filter-search-input"
+					placeholder="검색어를 입력해주세요" value="${keyword}" />
+				<button type="submit" class="filter-search-btn">검색</button>
+			</div>
+		</div>
+	</div>
+</form>
+
+
+<script>
+function toggleFilter() {
+  const filterBody = document.getElementById('filterBody');
+  const toggleBtn = document.querySelector('.fa-chevron-down');
+  const isVisible = filterBody.style.display === 'block';
+  
+  filterBody.style.display = isVisible ? 'none' : 'block';
+  toggleBtn.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+</script>
+
+<div class="cvpl-container">
+	<div class="cvpl-card-body">
+		<h4 class="cvpl-title">
+			민원 게시판
+			<sec:authorize access="hasRole('MBER')">
+				<button type="button" class="btn btn-success btn-sm"
+					onclick="cvplRegisterModal()">민원등록</button>
+			</sec:authorize>
+		</h4>
+		<div class="cvpl-table-wrapper">
+			<table class="cvpl-table">
+				<thead class="cvpl-table-head">
+					<tr class="cvpl-header-row">
+						<th class="cvpl-col-number">순번</th>
+						<!-- <th class="cvpl-col-name">회원명</th> -->
+						<th class="cvpl-col-title">제목</th>
+						<th class="cvpl-col-date">등록일</th>
+						<!-- <th class="cvpl-col-deptNm">부서명</th> -->
+						<!-- <th class="cvpl-col-code">처리현황</th> -->
+					</tr>
+				</thead>
+				<tbody id="cvplListTbody">
+					<c:forEach var="cvplVO" items="${articlePage.content}">
+						<tr class="cvpl-table-row"
+							onclick="cvplDetailModal(${cvplVO.cvplSn})">
+							<td class="cvpl-cell-number">${cvplVO.cvplSn}</td>
+							<%-- <td>${cvplVO.mberNm}</td> --%>
+							<td class="cvpl-cell-title">${cvplVO.cvplSj}</td>
+							<%-- <td>${cvplVO.deptVO.deptNm}</td> --%>
+							<td class="cvpl-cell-date"><fmt:formatDate
+									value="${cvplVO.reqstDt}" pattern="yyyy-MM-dd" /></td>
+							<%-- <td>
+						<!-- 처리현황 상태값 --> <c:set var="rceptSttus"
+							value="${cvplVO.cvplManageVO.cvplRceptVO.rceptSttus}" /> <c:choose>
+							<c:when test="${empty rceptSttus}">
+         	 				처리대기
+        					</c:when>
+							<c:when test="${rceptSttus == 1}">
+         					처리중
+        					</c:when>
+							<c:when test="${rceptSttus == 2}">
+        				    처리완료
+       						</c:when>
+							<c:otherwise>
+         					오류
+       						</c:otherwise>
+						</c:choose>
+					</td> --%>
+
+							<%-- 필요할까? 리스트의 파일여부가 
+    			<td>${cvplVO.fileGroupSn > 0 ? "있음" : "없음"}</td>
+    			  <p>${cvplVO.fileGroupSn}</p> --%>
+						</tr>
+					</c:forEach>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<!-- 페이지네이션 UI -->
+	<div class="cvpl-card-footer">${articlePage.pagingArea}</div>
+</div>
+
+
+
+<!-- ===== 상세보기 모달 시작 ===== -->
+
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down modal-lg">
+    <div class="modal-content" style="border: 0; border-radius: 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .12); overflow: hidden;">
+      
+      <!-- 헤더 -->
+      <div class="modal-header" style="background: rgba(100, 140, 164, .85); color: #fff; padding: .6rem .9rem; border: none;">
+        <h5 class="modal-title" style="font-size: 1rem; display: flex; gap: .5rem; align-items: center; margin: 0;">
+          <span>민원번호<span id="cvplSn" style="font-size: .85rem;">-</span></span> 
+          <span class="text-white-50">|</span> 
+          <small class="fw-normal" style="font-size: .85rem;">신청일: <span id="reqstDt" style="font-size: .85rem;">-</span></small>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body" style="padding: .9rem;">
+
+  <!-- 민원인 + 처리상태 (맨 위) -->
+  <div style="display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .75rem;">
+          <div style="display: flex; align-items: center; gap: .5rem;">
+            <div style="color: #6b7b86; font-size: .75rem; font-weight: 600; white-space: nowrap;">민원인</div>
+            <div id="mberId" style="font-size: .85rem; font-weight: 600; color: #495057;">-</div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: .5rem;">
+            <span style="color: #6b7b86; font-size: .75rem; font-weight: 600; white-space: nowrap;">처리현황</span>
+            <span id="rceptSttus" class="badge bg-warning text-dark" style="font-size: .75rem; padding: .4rem .6rem;">처리대기</span>
+          </div>
+        </div>
+
+
+  <!-- 민원제목 -->
+   <div class="mb-2">
+          <div style="color: #6b7b86; font-size: .75rem; margin-bottom: .25rem; font-weight: 600;">민원제목</div>
+          <div id="cvplSj" class="form-control form-control-sm" style="display: block; background-color: #f8f9fa; padding: .375rem .75rem; border: 1px solid #dee2e6; font-size: .85rem;"></div>
+          <input type="text" id="cvplSjInput" class="form-control form-control-sm" style="display: none; font-size: .85rem;">
+        </div>
+
+<!-- 민원내용 -->
+<div style="display: grid; grid-template-columns: 92px 1fr; row-gap: .35rem; column-gap: .75rem; padding: .8rem; border: 1px solid rgba(0, 0, 0, .06); border-radius: 10px; background: rgba(100, 140, 164, .12); margin-bottom: .75rem;">
+  <!-- 부서명 추가 (민원내용 아래) -->
+
+            <span style="color: #6b7b86; font-size: .75rem; font-weight: 600; margin-right: .5rem;">신청부서</span>
+            <span id="deptNm" style="font-size: .85rem; font-weight: 500; color: #495057;">-</span>
+          <div style="color: #6b7b86; font-size: .75rem; font-weight: 600; align-self: start;">민원내용</div>
+          <div style="font-weight: 500;">
+            <textarea id="cvplCn" class="form-control form-control-sm" rows="5" style="resize: none; display: block; background-color: #f8f9fa; font-size: .85rem;" readonly></textarea>
+            <textarea id="cvplCnInput" class="form-control form-control-sm" rows="5" style="resize: none; display: none; font-size: .85rem;"></textarea>
+          </div>
+  
+        </div>
+
+  <!-- 첨부파일 -->
+   <div class="mb-2">
+          <h6 style="margin: 0 0 .5rem 0; font-size: .75rem; color: #6b7b86; font-weight: 600;">첨부파일</h6>
+          <div id="fileDetailVOList" style="font-size: .85rem;"></div>
+        </div>
+
+  <!-- 숨겨진 필드 (수정용) -->
+  <input type="hidden" id="cvplSnHidden">
+</div>
+
+<!-- 이전글/다음글 네비게이션 -->
+<div style="padding: .75rem; border-top: 1px solid #dee2e6; margin-bottom: .5rem;">
+  
+  <!-- 이전글 -->
+  <div id="prevSection" onclick="clickPrev()" style="padding: .6rem .75rem; border: 1px solid rgba(100, 140, 164, .2); border-radius: 8px; background: linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%); cursor: pointer; transition: all 0.3s ease; margin-bottom: .5rem; display: flex; align-items: center; gap: .5rem;" onmouseover="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .15) 0%, rgba(100, 140, 164, .1) 100%)'; this.style.borderColor='rgba(100, 140, 164, .4)'; this.style.boxShadow='0 4px 12px rgba(100, 140, 164, .15)';" onmouseout="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%)'; this.style.borderColor='rgba(100, 140, 164, .2)'; this.style.boxShadow='none';">
+    <span class="badge bg-info" style="font-size: .7rem; padding: .35rem .5rem; white-space: nowrap; flex-shrink: 0; transition: all 0.3s ease;">이전글</span>
+    <div id="prevTitle" style="font-size: .85rem; color: #2c3e50; font-weight: 500; line-height: 1.4; word-break: break-word; flex: 1; transition: color 0.3s ease;">이전글 없음</div>
+  </div>
+
+  <!-- 다음글 -->
+  <div id="nextSection" onclick="clickNext()" style="padding: .6rem .75rem; border: 1px solid rgba(100, 140, 164, .2); border-radius: 8px; background: linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: .5rem;" onmouseover="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .15) 0%, rgba(100, 140, 164, .1) 100%)'; this.style.borderColor='rgba(100, 140, 164, .4)'; this.style.boxShadow='0 4px 12px rgba(100, 140, 164, .15)';" onmouseout="this.style.background='linear-gradient(135deg, rgba(100, 140, 164, .08) 0%, rgba(100, 140, 164, .04) 100%)'; this.style.borderColor='rgba(100, 140, 164, .2)'; this.style.boxShadow='none';">
+    <span class="badge bg-info" style="font-size: .7rem; padding: .35rem .5rem; white-space: nowrap; flex-shrink: 0; transition: all 0.3s ease;">다음글</span>
+    <div id="nextTitle" style="font-size: .85rem; color: #2c3e50; font-weight: 500; line-height: 1.4; word-break: break-word; flex: 1; transition: color 0.3s ease;">다음글 없음</div>
+  </div>
+</div>
+
+			<!-- 버튼 영역 -->
+			<div class="d-flex justify-content-end gap-2"
+				style="padding: .9rem; border-top: 1px solid rgba(0, 0, 0, .06);">
+				<button type="button" class="btn btn-light btn-sm"
+					data-bs-dismiss="modal"
+					style="padding: .35rem .7rem; border-radius: 10px; background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057; font-weight: 500;">닫기</button>
+				<button type="button" id="editBtn" class="btn btn-light btn-sm"
+					onclick="editMode()"
+					style="padding: .35rem .7rem; border-radius: 10px; background-color: #fffacd; border: 1px solid #dee2e6; color: #495057; font-weight: 500;">수정</button>
+				<button type="button" id="saveBtn" class="btn btn-info btn-sm"
+					onclick="saveCvpl()"
+					style="padding: .35rem .7rem; border-radius: 10px; display: none;">저장</button>
+			</div>
+
+			<!-- 푸터 -->
+			<div class="modal-footer"
+				style="padding: .6rem .9rem; background: #fff; border: none;"></div>
+		</div>
+	</div>
+</div>
+
+<!-- ===== 상세보기 모달 끝 ===== -->
+
+
+<!-- ===== 등록보기 모달 시작 ===== -->
+<form id="registerForm" enctype="multipart/form-data">
+  <div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down modal-lg">
+      <div class="modal-content" style="border: 0; border-radius: 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .12); overflow: hidden;">
+        
+        <!-- 헤더 -->
+        <div class="modal-header" style="background: rgba(100, 140, 164, .85); color: #fff; padding: .6rem .9rem; border: none;">
+          <h5 class="modal-title" style="font-size: 1rem; margin: 0;">민원신청</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- 본문 -->
+        <div class="modal-body" style="padding: .9rem;">
+
+          <!-- 민원 제목 -->
+          <div class="mb-2">
+            <div style="color: #6b7b86; font-size: .75rem; margin-bottom: .25rem; font-weight: 600;">민원제목</div>
+            <input id="cvplSj" type="text" name="cvplSj" class="form-control form-control-sm" style="font-size: .85rem;" required />
+          </div>
+
+          <!-- 신청 부서 -->
+          <div style="margin-bottom: .75rem;">
+            <div style="color: #6b7b86; font-size: .75rem; margin-bottom: .25rem; font-weight: 600;">부서선택</div>
+            <select id="deptCode" name="deptCode" class="form-control form-control-sm" style="font-size: .85rem;" required></select>
+          </div>
+
+          <!-- 민원 내용 -->
+          <div style="display: grid; grid-template-columns: 92px 1fr; row-gap: .35rem; column-gap: .75rem; padding: .8rem; border: 1px solid rgba(0, 0, 0, .06); border-radius: 10px; background: rgba(100, 140, 164, .12); margin-bottom: .75rem;">
+            <div style="color: #6b7b86; font-size: .75rem; font-weight: 600; align-self: start;">민원내용</div>
+            <div style="font-weight: 500;">
+              <textarea id="cvplCn" name="cvplCn" class="form-control form-control-sm" rows="5" style="resize: none; font-size: .85rem;" required></textarea>
+            </div>
+          </div>
+
+          <!-- 첨부파일 -->
+          <div class="mb-2">
+            <h6 style="margin: 0 0 .5rem 0; font-size: .75rem; color: #6b7b86; font-weight: 600;">첨부파일</h6>
+            <input type="file" id="multipartFiles" name="multipartFiles" class="form-control form-control-sm" style="font-size: .85rem;" multiple />
+          </div>
+
+        </div>
+
+        <!-- 버튼 영역 -->
+        <div class="d-flex justify-content-end gap-2" style="padding: .9rem; border-top: 1px solid rgba(0, 0, 0, .06);">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal" style="padding: .35rem .7rem; border-radius: 10px; background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057; font-weight: 500;">취소</button>
+          <button type="button" class="btn btn-info btn-sm" onclick="cvplRegister()" style="padding: .35rem .7rem; border-radius: 10px;">등록</button>
+        </div>
+
+        <!-- 푸터 -->
+        <div class="modal-footer" style="padding: .6rem .9rem; background: #fff; border: none;"></div>
+      </div>
+    </div>
+  </div>
+</form>
+<!-- ===== 등록보기 모달 끝 ===== -->
+
+<script type="text/javascript">
+	document.addEventListener("DOMContentLoaded", function(){
+		
+		let cvplList = [];
+		let currentIndex = -1;
+		
+		const detailModal = document.querySelector('#detailModal');
+		detailModal.addEventListener('hidden.bs.modal', function() {
+		  document.querySelector("#cvplSj").style.display = 'block';
+		  document.querySelector("#cvplCn").style.display = 'block';
+		  document.querySelector("#cvplSjInput").style.display = 'none';
+		  document.querySelector("#cvplCnInput").style.display = 'none';
+		  
+		  document.querySelector("#editBtn").style.display = 'block';
+		  document.querySelector("#saveBtn").style.display = 'none';
+		});
+
+		const registerModal = document.querySelector('#registerModal');
+		registerModal.addEventListener('hidden.bs.modal', function() {
+		  document.querySelector("#registerForm").reset();
+		});
+		
+		<!-- ===== 리스트 리로드 함수 script 시작 ===== -->
+		window.listAjax = function(){
+			fetch("/cvpl/listAjax",{
+				method:"post",
+				body: new URLSearchParams({ currentPage: 1, keyword: '', size: 10 })
+			})
+			.then(resp =>{
+				return resp.json();
+			})
+			.then(data =>{
+				console.log("data", data);
+				
+				 // 나중에 이거 함수 따로 빼도됨 공부해보고 빼자
+			    const tbody = document.querySelector("#cvplListTbody");
+			    tbody.innerHTML = '';
+			    
+			    //데이터 확인을 위한 정상적으로 없으면 
+			    //데이터가 있으면 forEach실행
+			    if(!data.articlePage.content || data.articlePage.content.length === 0) {
+			      tbody.innerHTML = '<tr><td colspan="3">데이터가 없습니다</td></tr>';
+			      return;
+			    } 
+			    
+			    data.articlePage.content.forEach(item => {
+			      const tr = document.createElement("tr");
+			      tr.onclick = () => cvplDetailModal(item.cvplSn);
+			      tr.className = "cvpl-table-row"; 
+			      tr.style.cursor = "pointer";
+			      const dateStr = new Date(item.reqstDt).toLocaleDateString();
+			      tr.innerHTML = `
+			    	  <td class="cvpl-cell-number">\${item.cvplSn}</td>
+			          <td class="cvpl-cell-title">\${item.cvplSj}</td>
+			          <td class="cvpl-cell-date">\${dateStr}</td>
+			        /* <td>\${item.cvplSn}</td>
+			        <td>\${item.mberNm}</td>
+			        <td>\${item.cvplSj}</td>
+			        <td>\${new Date(item.reqstDt).toLocaleString()}</td>
+			        <td>\${item.deptVO.deptNm}</td>
+			        <td>\${getStatus(item.cvplManageVO?.cvplRceptVO?.rceptSttus)}</td> */
+			      `;
+			      tbody.appendChild(tr);
+			    });
+			  })
+			  .catch(error => console.log("리로드 에러:", error));
+			}
+
+		
+		
+		<!-- ===== 상세보기 모달 script 시작 ===== -->
+		
+		window.cvplDetailModal = function(cvplSn){
+			
+			let data ={
+				"cvplSn" : cvplSn
+			};
+			
+			fetch("/cvpl/cvplDetailModal", {
+				method: "post",
+				headers: {
+					"Content-type":"application/json;charset=UTF-8"
+				},
+				body: JSON.stringify(data)	
+				})
+				.then(resp => {
+					return resp.json();
+				})
+				.then(data => {
+					const cvpl = data.cvplVO;
+					const fileDetailVOList = data.fileDetailVOList;	
+					cvplList = data.cvplList;
+					
+					console.log("data : ",data);
+					console.log("fileDetailVOList: ",fileDetailVOList);	
+					console.log("cvplList size: ", cvplList.length);
+			      
+				  document.querySelector("#cvplSj").style.display = 'block';
+				  document.querySelector("#cvplCn").style.display = 'block';
+				  document.querySelector("#cvplSjInput").style.display = 'none';
+				  document.querySelector("#cvplCnInput").style.display = 'none';
+				  document.querySelector("#editBtn").style.display = 'block';
+				  document.querySelector("#saveBtn").style.display = 'none';
+				  	
+					
+				  document.querySelector("#cvplSn").textContent = cvpl.cvplSn;
+			      document.querySelector("#mberId").textContent = cvpl.mberNm;
+			      document.querySelector("#cvplSj").textContent = cvpl.cvplSj;
+			      document.querySelector("#cvplCn").textContent = cvpl.cvplCn;
+			      document.querySelector("#reqstDt").textContent = new Date(cvpl.reqstDt).toLocaleString();
+			      document.querySelector("#deptNm").textContent = cvpl.deptVO.deptNm;
+			      document.querySelector("#rceptSttus").textContent = getStatus(cvpl.cvplManageVO?.cvplRceptVO?.rceptSttus);
+		 
+		          //수정용
+		          document.querySelector("#cvplSnHidden").value = cvpl.cvplSn;
+		          document.querySelector("#cvplSjInput").value = cvpl.cvplSj;
+		          document.querySelector("#cvplCnInput").value = cvpl.cvplCn;
+
+		          // 파일 처리
+		          let filesHtml = '';
+		          if (fileDetailVOList && fileDetailVOList.length > 0) {
+		            filesHtml = fileDetailVOList.map(fileDetailVO => `<img src="/upload\${fileDetailVO.fileStrelc}" style="height: 100px; margin: 5px;">`).join('');
+		          } else {
+		            filesHtml = '<p>첨부된 파일이 없습니다.</p>';
+		          }
+		          document.querySelector("#fileDetailVOList").innerHTML = filesHtml;
+		          
+		          // 처리상태에 따른 수정버튼 제어
+		          const editBtn = document.querySelector("#editBtn");
+		          const saveBtn = document.querySelector("#saveBtn");
+		          const rceptSttus = cvpl.cvplManageVO?.cvplRceptVO?.rceptSttus;
+		          
+		          // 처리대기(null 또는 undefined)일 때만 수정버튼 표시
+		          if (!rceptSttus) {
+		            editBtn.style.display = 'block';
+		            saveBtn.style.display = 'none';
+		            
+		          } else {
+		            editBtn.style.display = 'none';
+		            saveBtn.style.display = 'none';
+		          }
+		          
+		          // 현재 인덱스 찾기
+		          currentIndex = cvplList.findIndex(c => c.cvplSn === cvpl.cvplSn);
+		          
+		          // 이전/다음 텍스트
+		          updateNavText();
+		          
+		          // 모달 띄우기
+		          const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+		          detailModal.show();
+		          
+		        })
+		        .catch(error => console.log('에러:', error));
+		      };
+		      
+		      // ✅ 이전글 클릭
+		      window.clickPrev = function() {
+		        if (currentIndex > 0) {
+		          const backdrop = document.querySelector('.modal-backdrop');
+		          if (backdrop) backdrop.remove();
+		          document.body.classList.remove('modal-open');
+		          
+		          cvplDetailModal(cvplList[currentIndex - 1].cvplSn);
+		        }
+		      };
+
+		      // ✅ 다음글 클릭
+		      window.clickNext = function() {
+		        if (currentIndex < cvplList.length - 1) {
+		          const backdrop = document.querySelector('.modal-backdrop');
+		          if (backdrop) backdrop.remove();
+		          document.body.classList.remove('modal-open');
+		          
+		          cvplDetailModal(cvplList[currentIndex + 1].cvplSn);
+		        }
+		      };
+
+		      // ✅ 이전/다음글 텍스트 업데이트
+		      window.updateNavText = function() {
+		        const prevSection = document.querySelector("#prevSection");
+		        const nextSection = document.querySelector("#nextSection");
+		        
+		        if (!prevSection || !nextSection) return;
+		        
+		        // 이전글
+		        if (currentIndex > 0) {
+		          const prevCvpl = cvplList[currentIndex - 1];
+		          document.querySelector("#prevTitle").textContent = prevCvpl.cvplSj;
+		          prevSection.style.opacity = "1";
+		          prevSection.style.pointerEvents = "auto";
+		          prevSection.style.cursor = "pointer";
+		        } else {
+		          document.querySelector("#prevTitle").textContent = "이전글 없음";
+		          prevSection.style.opacity = "0.5";
+		          prevSection.style.pointerEvents = "none";
+		          prevSection.style.cursor = "not-allowed";
+		        }
+		        
+		        // 다음글
+		        if (currentIndex < cvplList.length - 1) {
+		          const nextCvpl = cvplList[currentIndex + 1];
+		          document.querySelector("#nextTitle").textContent = nextCvpl.cvplSj;
+		          nextSection.style.opacity = "1";
+		          nextSection.style.pointerEvents = "auto";
+		          nextSection.style.cursor = "pointer";
+		        } else {
+		          document.querySelector("#nextTitle").textContent = "다음글 없음";
+		          nextSection.style.opacity = "0.5";
+		          nextSection.style.pointerEvents = "none";
+		          nextSection.style.cursor = "not-allowed";
+		        }
+		      };
+		      
+		      
+		      // 상태 변환 함수
+		      window.getStatus = function(status) {
+		        if (!status) return '처리대기';
+		        if (status == 1) return '처리중';
+		        if (status == 2) return '처리완료';
+		        return '오류';
+		      };
+		      
+		// ===== 상세보기 모달 script 끝 =====
+		
+		
+		// ===== 등록보기 모달 시작 ===== 
+			
+		window.cvplRegisterModal = function(){
+			
+			fetch("/cvpl/cvplRegisterModal",{
+				method: "GET"	
+			})
+				.then(resp => {
+					return resp.json();
+				})
+				.then(data => {
+					
+					let deptOptions = `<option value="">선택하세요</option>`;
+					data.deptVOList.forEach(dept =>{
+						deptOptions += `<option value="\${dept.deptCode}">\${dept.deptNm}</option>`;
+						console.log("deptOptions", deptOptions);
+					});
+					document.querySelector("#deptCode").innerHTML = deptOptions;
+					
+					const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+					registerModal.show();
+					
+			})
+			.catch(error => console.log(error));
+		}
+				
+		// ===== 등록보기 모달 끝 =====
+			
+			
+		// ===== 등록 슛  =====
+			
+		window.cvplRegister = function(){
+			  const form = document.querySelector("#registerForm");
+			  const formData = new FormData(form);
+
+			  fetch("/cvpl/cvplRegister", { method: "POST", body: formData })
+			  .then(resp => resp.json())
+			  .then(data => {
+			    Swal.fire({
+			      icon: 'success',
+			      title: '성공!',
+			      text: '민원이 등록되었습니다.',
+			      confirmButtonColor: '#648ca4',
+			      confirmButtonText: '확인'
+			    }).then(() => {
+			      const registerModal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+			      if(registerModal) registerModal.hide();
+			      
+			      window.location.reload();
+			    });
+			  })
+			  .catch(error => console.log(error));
+			}
+			
+		// ===== 등록 끝 ===== 
+			
+	    
+		// ===== 수정 시작 =====
+window.editMode = function() {
+  document.querySelector("#cvplSj").style.display = 'none';
+  document.querySelector("#cvplCn").style.display = 'none';
+  
+  document.querySelector("#cvplSjInput").style.display = 'block';
+  document.querySelector("#cvplCnInput").style.display = 'block';
+  
+  document.querySelector("#editBtn").style.display = 'none';
+  document.querySelector("#saveBtn").style.display = 'block';
+}
+
+window.saveCvpl = function() {
+  const cvplVO = {
+    cvplSn: document.querySelector("#cvplSnHidden").value,
+    cvplSj: document.querySelector("#cvplSjInput").value,
+    cvplCn: document.querySelector("#cvplCnInput").value
+  };
+  
+  fetch("/cvpl/update", {
+    method: "POST",
+    headers: { "Content-type": "application/json;charset=UTF-8" },
+    body: JSON.stringify(cvplVO)
+  })
+  .then(resp => resp.json())
+  .then(data => {
+    Swal.fire({
+      icon: 'success',
+      title: '성공!',
+      text: '수정되었습니다.',
+      confirmButtonColor: '#648ca4',
+      confirmButtonText: '확인'
+    }).then(() => {
+      document.querySelector("#cvplSj").style.display = 'block';
+      document.querySelector("#cvplCn").style.display = 'block';
+      document.querySelector("#cvplSjInput").style.display = 'none';
+      document.querySelector("#cvplCnInput").style.display = 'none';
+      document.querySelector("#editBtn").style.display = 'block';
+      document.querySelector("#saveBtn").style.display = 'none';
+      
+      const detailModal = bootstrap.Modal.getInstance(document.getElementById('detailModal'));
+      if(detailModal) detailModal.hide();
+      
+      window.location.reload();
+    });
+  })
+  .catch(error => console.log("수정 에러:", error));
+}
+// ===== 수정 끝 =====
+			
+ });
+</script>
+
+<%@ include file="../include/footerContents.jsp"%>

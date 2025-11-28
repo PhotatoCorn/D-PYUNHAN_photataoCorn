@@ -1,0 +1,102 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+
+<!-- ===== Footer (Dewi / Bootstrap 5) ===== -->
+<footer id="footer" class="footer dark-background sticky-bottom">
+
+	<div class="d-flex align-items-center ms-auto gap-2">
+
+		<nav id="navmenu" class="navmenu mx-auto">
+			<ul>
+				<li><a href="#levy"><span >관리비</span></a></li>
+				<li><a href="#notice"><span>공지</span></a></li>
+				<li><a href="#resve"><span>편의시설</span></a></li>
+				<li><a href="#vehicle"><span>방문차량</span></a></li>
+			</ul>
+		</nav>
+	</div>
+	
+	
+	
+	
+</footer>
+
+<!-- Scroll Top -->
+<a href="#" id="scroll-top"
+	class="scroll-top d-flex align-items-center justify-content-center">
+	<i class="bi bi-arrow-up-short"></i>
+</a>
+
+<!-- Preloader -->
+<div id="preloader"></div>
+
+<!-- ===== JS (Bootstrap 5 / Dewi) ===== -->
+<script src="/dewi/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/dewi/assets/vendor/php-email-form/validate.js"></script>
+<script src="/dewi/assets/vendor/aos/aos.js"></script>
+<script src="/dewi/assets/vendor/glightbox/js/glightbox.min.js"></script>
+<script src="/dewi/assets/vendor/purecounter/purecounter_vanilla.js"></script>
+<script src="/dewi/assets/vendor/swiper/swiper-bundle.min.js"></script>
+<script src="/dewi/assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
+<script src="/dewi/assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+<!-- BJW추가 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script
+	src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+<!-- BJW추가 -->
+<!-- 결제api시작 -->
+<script src="https://cdn.portone.io/v2/browser-sdk.js" async defer></script>
+<!-- 결제api끝 -->
+
+<!-- Dewi 메인 JS -->
+<script src="/dewi/assets/js/main.js"></script>
+<!-- 모바일 프레임 닫기 -->
+</div>
+<!-- /.mobile-frame -->
+
+</body>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const frame  = document.querySelector('.mobile-frame');
+  const header = frame?.querySelector('#header');
+  if (!frame || !header) return;
+
+  const TH = 60; //스크롤 크기만큼 미리 스크롤 내려놓는효과
+  const onScroll = () => {
+    header.classList.toggle('scrolled', frame.scrollTop > TH);
+  };
+
+  // 초기 상태 반영 + 스크롤 이벤트 등록
+  onScroll();
+  frame.addEventListener('scroll', onScroll, {passive:true});
+
+  // 모바일 메뉴 열릴 때는 불투명 유지
+  const navToggle = header.querySelector('.mobile-nav-toggle');
+  if (navToggle) {
+    navToggle.addEventListener('click', () => {
+      const isActive = document.body.classList.contains('mobile-nav-active');
+      header.classList.toggle('nav-open', !isActive);
+    });
+  }
+});
+
+
+
+const frame = document.querySelector('.mobile-frame');
+if (frame) {
+  frame.addEventListener('scroll', () => AOS.refresh());
+}
+document.addEventListener("DOMContentLoaded", function() {
+    AOS.init({
+      once: false,          // true면 한 번만, false면 스크롤마다 다시
+      duration: 800,        // 애니메이션 시간
+      easing: 'ease-out'
+    });
+  });
+  
+
+</script>
+
+</html>

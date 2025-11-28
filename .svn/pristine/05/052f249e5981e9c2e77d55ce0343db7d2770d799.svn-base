@@ -1,0 +1,62 @@
+package kr.or.ddit.service.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.or.ddit.mapper.MberMapper;
+import kr.or.ddit.service.MberService;
+import kr.or.ddit.vo.MberVO;
+import lombok.extern.slf4j.Slf4j;
+
+
+@Slf4j
+@Transactional
+@Service
+public class MberServiceImpl implements MberService  {
+
+    @Autowired
+    MberMapper mberMapper;
+
+    @Override
+    public String selectHouseholdIdByMember(String mberId) {
+    	   return mberMapper.selectHouseholdIdByMember(mberId);
+    }
+
+    @Override
+    public MberVO findByMberId(String mberId) {
+        // Mapper 내 두 가지 조회 메서드(findByMberId, selectMemberById) 중 하나만 사용
+        return mberMapper.selectMemberById(mberId);
+    }
+
+    @Override
+    public void insertMember(MberVO mberVO) {
+        mberMapper.insertMember(mberVO);
+    }
+
+    @Override
+    public void insertMemberAuthor(MberVO mberVO) {
+        mberMapper.insertMemberAuthor(mberVO);
+    }
+
+	@Override
+	public boolean checkHousehold(int aptcmpl, int ho, int residesttus) {
+        Integer count = mberMapper.countHousehold(aptcmpl, ho, residesttus );
+        return count != null && count > 0;
+	}
+
+	@Override
+	public boolean checkAlreadyRegistered(int aptcmpl, int ho, int residesttus) {
+        Integer count = mberMapper.countRegistered(aptcmpl, ho, residesttus);
+        return count != null && count > 0;
+	}
+
+	@Override
+	public void insertHouseholdMember(MberVO mberVO) {
+		   mberMapper.insertHouseholdMember(mberVO);
+	}
+
+}

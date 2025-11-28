@@ -1,0 +1,123 @@
+// visitVhcle.js 전체 코드
+
+// 모달 관련 요소
+const historyModal = document.getElementById("historyModal");
+const openHistoryBtn = document.getElementById("openHistoryModalBtn");
+const closeHistoryBtn = document.getElementById("closeHistoryModal");
+
+// 모달 열기
+if (openHistoryBtn && historyModal) {
+    openHistoryBtn.onclick = () => {
+        historyModal.style.display = "block";
+        const filterBtn = document.getElementById("filterBtn");
+        if (filterBtn) filterBtn.click();
+    };
+}
+
+// 모달 닫기
+if (closeHistoryBtn && historyModal) {
+    closeHistoryBtn.onclick = () => historyModal.style.display = "none";
+}
+
+// 모달 외부 클릭 시 닫기
+window.onclick = (e) => {
+    if (e.target === historyModal) historyModal.style.display = "none";
+};
+
+// ------------------------------
+// 공통: 남은시간/누적시간 갱신 함수
+// ------------------------------
+function updateRemainAccmltTime() {
+    fetch(`${prc}/visit/reserveData`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById("remainingTime").textContent = data.remainingTime + " 시간";
+                document.getElementById("accmltTime").textContent = data.accmltTime + " 시간";
+            }
+        })
+        .catch(err => console.error("시간 갱신 오류:", err));
+}
+
+// ------------------------------
+// DOMContentLoaded
+// ------------------------------
+document.addEventListener("DOMContentLoaded", function() {
+
+    const remainingTimeSpan = document.getElementById("remainingTime");
+    const accmltTimeSpan = document.getElementById("accmltTime");
+    const reserveForm = document.getElementById("reserveForm");
+    const reserveModalEl = document.getElementById("reserveModal");
+    const reserveModal = reserveModalEl ? bootstrap.Modal.getOrCreateInstance(reserveModalEl) : null;
+
+    // 페이지 로드 시 남은시간/누적시간 초기 불러오기
+    updateRemainAccmltTime();
+
+    // ------------------------------
+    // 🔥 예약 폼 제출 (alert → Swal 교체)
+    // ------------------------------
+    if (reserveForm) {
+        reserveForm.onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch(`${prc}/visit/reserve`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+
+                    // Swal → 닫힌 뒤 시간 갱신 + 모달 닫기
+                    Swal.fire({
+                        icon: "success",
+                        title: "예약이 완료되었습니다!",
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        updateRemainAccmltTime();
+
+                        if (reserveModal) {
+                            reserveModal.hide();
+                        }
+
+                        reserveForm.reset();
+                    });
+
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "예약 실패",
+                        text: data.message || "예약 처리 중 오류가 발생했습니다."
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire({
+                    icon: "error",
+                    title: "서버 오류",
+                    text: "잠시 후 다시 시도해주세요."
+                });
+            });
+        };
+    }
+
+});
+
+// ------------------------------
+// URL 파라미터로 모달 자동오픈
+// ------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const open = params.get("open");
+
+    if (open === "visitVhcle") {
+        showModal("reserveModal");
+
+        const url = new URL(window.location.href);
+        url.searchParams.delete("open");
+        window.history.replaceState({}, "", url.toString());
+    }
+});

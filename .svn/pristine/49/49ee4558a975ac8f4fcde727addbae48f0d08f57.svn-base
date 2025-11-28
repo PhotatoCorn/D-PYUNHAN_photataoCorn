@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.MberMapper">
+	
+	<resultMap type="kr.or.ddit.vo.MberVO" id="mberMap">
+		<result property="enabled" column="ENABLED"/>
+		<result property="mberId" column="MBER_ID"/>
+		<result property="password" column="PASSWORD"/>
+		<result property="mberNm" column="MBER_NM"/>
+		<result property="telno" column="TELNO"/>
+		<result property="email" column="EMAIL"/>
+		<result property="mberTy" column="MBER_TY"/>
+		<result property="brthdy" column="BRTHDY"/>	
+		<collection property="authorVOList" resultMap="AuthorMap"></collection>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.vo.AuthorVO" id="AuthorMap">
+		<result property="mberId" column="MBER_ID"/>
+		<result property="authorId" column="AUTHOR_ID"/>
+	</resultMap>
+	
+	<!-- 사용자 정보를 가져옴(로그인)-select -->
+	<select id="findByMberId" parameterType="string" resultMap="mberMap">
+		SELECT
+		    a.mber_id,
+		    a.password,
+		    a.mber_nm,
+		    a.telno,
+		    a.email,
+		    a.mber_ty,
+		    a.brthdy,
+		    a.enabled,
+    			b.author_id
+		FROM
+		    mber a
+		LEFT OUTER JOIN author b on(a.mber_id = b.mber_id)
+		WHERE
+			a.mber_id = #{mberId}
+	</select>
+	
+</mapper>

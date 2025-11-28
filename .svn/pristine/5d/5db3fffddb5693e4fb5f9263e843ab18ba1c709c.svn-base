@@ -1,0 +1,531 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>dpunhan-index</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+
+<!-- Favicons -->
+<link href="/dewi/assets/img/favicon.png" rel="icon">
+<link href="/dewi/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+<link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@100..900&family=Raleway:wght@100..900&family=Inter:wght@100..900&display=swap"
+    rel="stylesheet">
+
+<!-- Vendor CSS Files -->
+<link href="/dewi/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="/dewi/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+<!-- ✅ 아이콘 경로 보정용 CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link href="/dewi/assets/vendor/aos/aos.css" rel="stylesheet">
+
+
+<!-- Main CSS File -->
+<link href="/dewi/assets/css/main.css" rel="stylesheet">
+
+<link rel="stylesheet" href="/adminlte/plugins/summernote/summernote-bs4.min.css">
+
+<style>
+:root {
+    --frame-width: 480px;
+    --frame-radius: 18px;
+}
+
+html, body {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #f8f9fa;
+}
+
+body.index-page {
+    background: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+}
+
+.mobile-frame {
+    width: 100%;
+    max-width: var(--frame-width);
+    margin: 0 auto;
+    min-height: 100vh;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .12);
+    border-radius: var(--frame-radius);
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 55px;
+    padding-bottom: 55px;
+    box-sizing: border-box;
+}
+
+.mobile-frame::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+}
+
+header#header {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--frame-width);
+  z-index: 1056;
+  height: 60px;
+  background-color: #648ca4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+  display: flex;
+  align-items: center;
+  border-top-left-radius: var(--frame-radius);
+  border-top-right-radius: var(--frame-radius);
+}
+
+header#header .container-fluid {
+  position: relative;
+  width: 100%;
+  max-width: var(--frame-width);
+  display: flex;
+  justify-content: center;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+/* -------------------------------- */
+/* MENU 버튼 왼쪽 */
+/* -------------------------------- */
+#header-navmenu {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#header-navmenu ul ul {
+    position: absolute !important;
+    top: 100%;
+    left: 0;
+    z-index: 99999 !important;
+}
+
+#header-navmenu li.active > ul,
+#header-navmenu ul ul.dropdown-active {
+  display: block !important;
+}
+
+#header-navmenu li.open-right > ul {
+    display: block !important;
+    left: 0;
+}
+
+#header-navmenu ul ul a {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+#header-navmenu i {
+    font-size: 14px !important;
+}
+
+#header-navmenu li.dropdown:hover > ul {
+/*     display: block !important; */
+    top: 100%;
+    left: 0;
+}
+/* open 상태에서만 드롭다운 열기 */
+#header-navmenu li.open > ul {
+    display: block !important;
+}
+#header-navmenu ul ul li:hover > ul {
+    display: block !important;
+    left: 100%;
+    top: 0;
+}
+
+#header-navmenu > ul > li > ul {
+    top: 100% !important;
+    left: 0 !important;
+    margin-top: 8px;
+}
+
+#header-navmenu > ul > li > ul > li > ul {
+  top: 0 !important;
+  left: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  background: #fff;
+}
+
+#header-navmenu > ul > li > ul > li > ul a {
+    padding: 6px 10px !important;
+}
+
+/* MENU 텍스트 10px */
+#header-navmenu > ul > li > a span,
+#header-navmenu > ul > li > a span i {
+    font-size: 14px !important;
+}
+/* underline 제거 */
+#header-navmenu > ul > li > a:before {
+    background: none !important;
+}
+#header-navmenu > ul > li > a:hover i,
+#header-navmenu > ul > li > a:hover span {
+    color: #ff7a00 !important;
+}
+
+
+/* 중앙 로고 */
+#header .brand-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* -------------------------------- */
+/* RIGHT USER MENU (고길동님) */
+/* -------------------------------- */
+#user-menu {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 200000;
+}
+
+#user-menu > ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#user-menu > ul > li > a {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #ffffff;
+    cursor: pointer;
+    padding: 15px 14px 15px 0px !important;
+}
+
+#user-menu i {
+    font-size: 14px !important;
+}
+
+#user-menu > ul > li > ul {
+    position: absolute;
+    top: calc(100% + 1px);
+    right: 0px;
+    left: auto !important;
+    background: #ffffff;
+    border-radius: 4px;
+    box-shadow: 0 2px 18px rgba(0,0,0,0.08);
+    min-width: 150px;
+    width: auto;
+    padding: 6px 0;
+    list-style: none;
+    z-index: 99999;
+    transform: translateY(0); 
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+/* open 상태일 때 */
+#user-menu > ul > li.open > ul {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+#user-menu li.active > ul {
+    display: block;
+}
+
+#user-menu li.open > ul {
+    display: block !important;
+}
+
+#user-menu > ul > li > ul li a,
+#user-menu > ul > li > ul li button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px !important;
+    font-size: 14px;
+    color: #333 !important;
+    background: none;
+    border: none;
+    text-align: left;
+}
+
+#user-menu > ul > li > ul li a:hover,
+#user-menu > ul > li > ul li button:hover {
+    background: #f1f1f1 !important;
+    color: #364E5C !important;
+}
+
+/* -------------------------------- */
+/* MOBILE RESPONSIVE */
+/* -------------------------------- */
+@media (max-width: 480px) {
+  header#header .brand-link img {
+    width: 42px;
+    height: 42px;
+  }
+  #header-navmenu { left: 8px; }
+  #user-menu { right: 8px; }
+}
+
+/* -------------------------------- */
+/* FOOTER */
+/* -------------------------------- */
+.mobile-frame .footer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: var(--frame-width);
+    height: 60px;
+    z-index: 1056;
+    background-color: #648ca4;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, .06);
+    border-bottom-left-radius: var(--frame-radius);
+    border-bottom-right-radius: var(--frame-radius);
+    overflow: visible;
+    margin-top: auto;
+}
+
+#footer ul li a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+#home {
+  position: relative;
+  top: -60px;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.testimonials {
+  padding-bottom: 60px;
+}
+/* open 상태에서도 MENU 텍스트 주황 유지 */
+#header-navmenu > ul > li.open > a,
+#header-navmenu > ul > li.open > a span,
+#header-navmenu > ul > li.open > a i {
+    color: #364E5C !important;
+}
+#header-navmenu a::before,
+#header-navmenu > ul > li > a::before {
+    background: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    content: none !important;
+}
+#header-navmenu > ul > li.open > a:before {
+    width: 100% !important;
+    background-color: #364E5C !important;
+}
+/* 2) hover 시 글자/아이콘은 주황색 유지 */
+#user-menu > ul > li > a:hover,
+#user-menu > ul > li.open > a,
+#user-menu > ul > li > a:hover span,
+#user-menu > ul > li > a:hover i {
+    color: #364E5C !important;
+}
+#user-menu > ul > li:hover .user-circle,
+#user-menu > ul > li.open .user-circle {
+    background: #364E5C !important;   /* hover 시 주황 */
+    color: #ffffff !important;        /* 글자 흰색 */
+}
+#user-menu .user-profile {
+    align-items: center; /* 기존 있음 */
+    display: flex;
+}
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    cursor: pointer;
+}
+
+.user-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #648ca4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#levy, #resve, #vote, #notice, #vehicle, #calender {
+  scroll-margin-top: 60px;
+}
+
+</style>
+</head>
+
+<body class="index-page">
+	<div class="mobile-frame">
+
+		<header id="header" class="header sticky-top" style="padding-top: 4px; padding-bottom: 4px;">
+			<div class="container-fluid container-xl position-relative">
+			
+				<nav id="header-navmenu" class="navmenu mx-auto">
+					<ul>
+			             <li class="dropdown">
+			                 <a href="#">
+			                     <span><i class="bi bi-menu-button-wide">&nbsp;MENU</i></span>
+			                     <i class="bi bi-chevron-down toggle-dropdown"></i>
+                            </a>
+							<ul>
+								<li><a href="/rqest/rqest"><i class="bi bi-cash-coin"></i>&nbsp;관리비</a></li>
+								<li><a href="/cvpl/list"><i class="bi bi-chat-left-text"></i>&nbsp;민원 등록</a></li>
+								<li><a href="/visit/reserve"><i class="bi bi-car-front-fill"></i>&nbsp;방문차량 예약</a></li>
+								<li><a href="/resve/list"><i class="bi bi-house-check"></i>&nbsp;편의시설 예약</a></li>
+								<li class="dropdown open-right">
+								    <a href="#"> <i class="bi bi-list"></i>&nbsp;게시판목록
+								        <i class="bi bi-chevron-right toggle-dropdown"></i>
+								    </a>
+									<ul>
+										<li class="dropdown open-right">
+								            <a href="/bbs/bbsGroupList"> <i class="bi bi-list"></i>&nbsp;게시판</a>
+								        </li>
+									</ul>
+							    </li>
+								<li><a href="/vote/memVoteList"><i class="bi bi-ui-checks-grid"></i>&nbsp;주민 투표</a></li>
+							</ul>
+						</li>
+					</ul>
+				</nav>
+
+				<!-- 로고 -->
+				<a href="/main" class="brand-link d-flex align-items-center gap-2 text-decoration-none">
+					<img src="/images/logo1.png" alt="로고"
+					class="brand-image img-circle elevation-3"
+					style="width: 75px; height: 75px; object-fit: cover;">
+				</a>
+				
+<!-- <nav id="navmenu" class="navmenu"> -->
+<!-- <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a> -->
+<!--   <ul> -->
+<!--     <li><a href="#">Dropdown 1</a></li> -->
+<!--     <li class="dropdown"><a href="#"><span>Deep Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a> -->
+<!--       <ul> -->
+<!--         <li><a href="#">Deep Dropdown 1</a></li> -->
+<!--         <li><a href="#">Deep Dropdown 2</a></li> -->
+<!--         <li><a href="#">Deep Dropdown 3</a></li> -->
+<!--         <li><a href="#">Deep Dropdown 4</a></li> -->
+<!--         <li><a href="#">Deep Dropdown 5</a></li> -->
+<!--       </ul> -->
+<!--     </li> -->
+<!--     <li><a href="#">Dropdown 2</a></li> -->
+<!--     <li><a href="#">Dropdown 3</a></li> -->
+<!--     <li><a href="#">Dropdown 4</a></li> -->
+<!--   </ul> -->
+<!-- </li> -->
+<!-- </nav> -->
+<!-- 				로그인 / 로그아웃 -->
+				<nav id="user-menu">
+				    <ul>
+				        <li class="dropdown">
+				            <sec:authorize access="isAuthenticated()">
+				                <sec:authentication property="principal.mberVO" var="mberVO" />
+				                <a href="#" class="user-profile">
+								    <div class="user-circle">
+								        ${fn:substring(mberVO.mberNm, 1, 3)}
+								    </div>
+								    <i class="bi bi-chevron-down toggle-dropdown"></i>
+								</a>
+				                <ul class="dropdown-menu-box">
+				                    <li>
+				                        <a href="/mypage/info">
+				                            <i class="bi bi-person"></i>
+				                            <span>내 정보</span>
+				                        </a>
+				                    </li>
+				                    <li>
+				                        <form action="/logout" method="post" >
+				                            <button type="submit">
+				                                <i class="bi bi-box-arrow-right"></i><span>로그아웃</span>
+				                            </button>
+				                        </form>
+				                    </li>
+				                </ul>
+				            </sec:authorize>
+				
+				            <sec:authorize access="isAnonymous()">
+				                <a href="/login" class="btn">로그인</a>
+				            </sec:authorize>
+				        </li>
+				    </ul>
+				</nav>
+
+
+			</div>
+			<!-- /.container-fluid -->
+		</header>
+		<!-- /header -->
+		<!-- =============== /Dewi Header =============== -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const li = document.querySelector("#header-navmenu .dropdown");
+
+    li.addEventListener("mouseenter", () => {
+        li.classList.add("open");
+    });
+
+    li.addEventListener("mouseleave", () => {
+        li.classList.remove("open");
+    });
+    
+    const right = document.querySelector("#user-menu .dropdown");
+
+    right.addEventListener("mouseenter", () => {
+        right.classList.add("open");
+    });
+
+    right.addEventListener("mouseleave", () => {
+        right.classList.remove("open");
+    });
+});
+
+</script>
+
+		<!-- 여기서부터 각 페이지의 본문이 들어갑니다. 푸터에서 </div> </body> </html> 을 닫아주세요. -->

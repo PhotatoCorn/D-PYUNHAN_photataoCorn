@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.VoteManageTrgterMapper">
+		<!-- 1 -->
+	<resultMap type="kr.or.ddit.vo.VoteMtrVO" id="voteMtrMap">
+		<result property="voteMtrSn" column="VOTE_MTR_SN" />
+		<result property="mtrSj" column="MTR_SJ" />
+		<result property="mtrCn" column="MTR_CN" />
+		<result property="voteBeginDt" column="VOTE_BEGIN_DT" />
+		<result property="voteEndDt" column="VOTE_END_DT" />
+		<result property="empId" column="EMP_ID" />
+		<collection property="voteIemVOList" resultMap="voteIemMap" />
+	</resultMap>
+	<!-- N -->
+	<resultMap type="kr.or.ddit.vo.VoteIemVO" id="voteIemMap">
+		<result property="voteMtrSn" column="VOTE_MTR_SN" />
+		<result property="voteIemNo" column="VOTE_IEM_NO" />
+		<result property="iemNm" column="IEM_NM" />
+		<result property="iemCn" column="IEM_CN" />
+		<result property="cnt" column="CNT" />
+		
+	</resultMap>
+
+	<!-- //JOIN -->
+	<!-- 투표하려고보는 상세페이지 -->
+	<select id="voteMtrList" parameterType="int" resultMap="voteMtrMap">
+		SELECT
+		A.VOTE_MTR_SN,A.MTR_SJ,A.MTR_CN,A.VOTE_BEGIN_DT,A.VOTE_END_DT,A.EMP_ID
+		,B.VOTE_MTR_SN, B.VOTE_IEM_NO, B.IEM_NM, B.IEM_CN
+
+		from VOTE_MTR A LEFT
+		OUTER JOIN VOTE_IEM B on(A.VOTE_MTR_SN = B.VOTE_MTR_SN)
+
+		WHERE
+		A.VOTE_MTR_SN = #{voteMtrSn} 
+		ORDER BY B.VOTE_IEM_NO
+	</select> 
+	
+	<!-- //읽기 -->
+	<!-- public int voteDetail(VoteMtrVO voteMtrVO); -->
+	<select id="memVoteList" parameterType="kr.or.ddit.vo.VoteMtrVO"
+		resultType="kr.or.ddit.vo.VoteMtrVO">
+		SELECT
+		    a.vote_mtr_sn,
+		    a.mtr_sj,
+		    a.mtr_cn,
+		    a.vote_begin_dt,
+		    a.vote_end_dt,
+		    a.emp_id,
+		    (
+		    SELECT COUNT(b.MBER_ID)
+				FROM VOTE_MANAGE_TRGTER b
+				WHERE b.vote_mtr_sn = a.vote_mtr_sn
+		    ) as VOTED_NUM 
+		FROM
+		    vote_mtr a
+	</select>
+
+	
+	<!-- 투표하기 -->
+	<insert id="haveAVote" parameterType="kr.or.ddit.vo.VoteManageTrgterVO">
+		INSERT INTO VOTE_MANAGE_TRGTER (VOTE_MTR_SN, MBER_ID, VOTE_IEM_NO)
+		VALUES (#{voteMtrSn}, #{mberId}, #{voteIemNo})
+	</insert>
+
+	<!-- 투표항목+항목별 투표한사람	public VoteMtrVO goVotedResult(VoteMtrVO voteMtrVO); -->
+	<select id="goVotedResult" parameterType="int" resultMap="voteMtrMap">
+		SELECT    
+		A.VOTE_MTR_SN, A.MTR_SJ,A.MTR_CN, A.VOTE_BEGIN_DT, A.VOTE_END_DT, A.EMP_ID,
+		B.VOTE_MTR_SN, B.VOTE_IEM_NO, B.IEM_NM, B.IEM_CN,
+		COUNT(C.MBER_ID) CNT 
+		FROM VOTE_MTR A LEFT OUTER JOIN VOTE_IEM B ON(A.VOTE_MTR_SN = B.VOTE_MTR_SN)
+						LEFT OUTER JOIN VOTE_MANAGE_TRGTER C ON(B.VOTE_IEM_NO = C.VOTE_IEM_NO
+															AND B.VOTE_MTR_SN = C.VOTE_MTR_SN) 
+<!-- 		WHERE 1 = 1  -->
+		WHERE A.VOTE_MTR_SN = #{voteMtrSn}
+		GROUP BY 
+		A.VOTE_MTR_SN, A.MTR_SJ,A.MTR_CN, A.VOTE_BEGIN_DT, A.VOTE_END_DT, A.EMP_ID,
+		B.VOTE_MTR_SN, B.VOTE_IEM_NO, B.IEM_NM, B.IEM_CN
+	</select>
+	
+</mapper>

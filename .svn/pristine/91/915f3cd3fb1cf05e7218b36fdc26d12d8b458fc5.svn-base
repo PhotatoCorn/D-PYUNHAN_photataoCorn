@@ -1,0 +1,66 @@
+package kr.or.ddit.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.mapper.CvplMapper;
+import kr.or.ddit.service.CvplService;
+import kr.or.ddit.vo.CvplVO;
+import kr.or.ddit.vo.DeptVO;
+import kr.or.ddit.vo.FileDetailVO;
+
+@Service
+public class CvplServiceImpl implements CvplService {
+
+	@Autowired
+	CvplMapper cvplMapper;
+	
+	@Override
+	public List<CvplVO> list(Map<String, Object> map) {
+	
+		return this.cvplMapper.list(map);
+	}
+
+	@Override
+	public int getTotal(Map<String, Object> map) {
+		
+		return this.cvplMapper.getTotal(map);
+	}
+
+	@Override
+	public CvplVO findById(int cvplSn) {
+		
+		return this.cvplMapper.findById(cvplSn);
+	}
+
+	@Override
+	public int register(CvplVO cvplVO) {
+		//민원 등록
+		int result = this.cvplMapper.register(cvplVO);
+		//민원 관리 등록
+//		this.cvplMapper.registerManage(cvplVO);
+		
+		return result;
+	}
+
+	@Override
+	public List<DeptVO> deptVOList() {
+
+		return this.cvplMapper.deptVOList();
+	}
+
+	@Override
+	public List<FileDetailVO> getFileDetailVOList(long fileGroupSn) {
+		return this.cvplMapper.getFileDetailVOList(fileGroupSn);
+	}
+
+	@Override
+	public int update(CvplVO cvplVO) {
+		
+		return this.cvplMapper.update(cvplVO);
+	}
+
+}

@@ -1,0 +1,58 @@
+document.addEventListener("DOMContentLoaded", function() {
+
+    const noticeArea = document.querySelector('#noticeCard');
+    if (noticeArea) {
+        noticeArea.addEventListener('click', function(e) {
+            const a = e.target.closest('a.notice-link');
+            const tr = e.target.closest('tr.notice-row');
+            const sn = a?.dataset.sn || tr?.dataset.sn;
+            if (!sn) return;
+            e.preventDefault();
+            noticeDetail(sn);
+        });
+    }
+
+
+
+    noticeDetail = function(noticeSn) {
+
+        let data = {
+            "noticeSn": noticeSn
+        }
+
+        fetch("/notice/detail", {
+            method: "post",
+            headers: {
+                "Content-type": "application/json;charset=UTF-8"
+            },
+            body: JSON.stringify(data)
+        })
+            .then(resp => {
+                return resp.json();
+            })
+            .then(data => {
+                const notice = data.noticeVO;
+                const fileDetailVOList = data.fileDetailVOList;
+
+                console.log("data : ", data);
+                console.log("fileDetailVOList : ", fileDetailVOList);
+
+                document.querySelector("#noticeSn").textContent = notice.noticeSn;
+                document.querySelector("#noticeSj").textContent = notice.noticeSj;
+                document.querySelector("#noticeCn").innerHTML = notice.noticeCn;
+                document.querySelector("#noticeWritngDt").textContent = new Date(notice.noticeWritngDt).toLocaleString();
+                document.querySelector("#empId").textContent = notice.nm;
+
+                let filesHtml = '';
+                if (fileDetailVOList && fileDetailVOList.length > 0) {
+                    filesHtml = fileDetailVOList.map(fileDetailVO => `<img src="/upload${fileDetailVO.fileStrelc}" style="height: 100px; margin: 5px;">`).join('');
+                } else {
+                    filesHtml = '<p>첨부된 파일이 없습니다.</p>';
+                }
+                document.querySelector("#fileDetailVOList").innerHTML = filesHtml;
+
+                new bootstrap.Modal(document.querySelector('#detailModal')).show();
+            })
+            .catch(error => console.log("에러:", error));
+    }
+})

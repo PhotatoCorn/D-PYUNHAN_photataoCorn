@@ -1,0 +1,43 @@
+#calendar {
+  max-width: 700px;  /* 전체 폭 줄이기 */
+  max-height: 600px;  /* 전체 폭 줄이기 */
+  
+  font-size: 0.8rem; /* 전체 글자 크기줄이기 */
+  margin: 0 auto;    /* 가운데 정렬 */
+}
+/* 헤더 버튼 공통 크기 조절 */
+#calendar .fc-toolbar .fc-button {
+  padding: 2px 3px !important;   /* 좌우/상하 여백 -> 버튼 크기 */
+  font-size: 0.75rem !important; /* 글자 크기 */
+  min-height: 24px !important;   /* 최소 높이 */
+  line-height: 1.2 !important;
+}
+/* Today 버튼 강조 */
+.fc .fc-today-button {
+  background: rgba(100,140,164,0.7) !important;
+  border-color: rgba(100,140,164,1) !important;
+  color: #fff !important;
+}
+/*날짜 숫자 색상*/
+.fc-daygrid-day-number {
+    color: gray;
+}
+/*요일 헤더 색상*/
+.fc-col-header-cell-cushion {
+    color: black;
+}
+/*오늘 날짜 배경색*/
+.fc-day-today {
+    background-color: beige;
+}
+/*이벤트 일정 스타일*/
+.fc-event {
+    background-color: plum;
+    color: blueviolet;
+    border-radius: 3px;
+}
+/* Week number 색상 */
+.fc .fc-daygrid-week-number {
+    color: #888888;
+}
+

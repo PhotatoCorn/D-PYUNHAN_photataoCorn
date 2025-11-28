@@ -1,0 +1,252 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+<!DOCTYPE html>
+<html>
+<head>
+<title>게시글 목록</title>
+<script type="text/javascript">
+let currentPage = 1;
+let currentKeyword = "";
+let bbsGroupSn = 0;
+
+document.addEventListener("DOMContentLoaded", function(){
+    
+    // URL에서 bbsGroupSn 추출
+    const pathParts = window.location.pathname.split('/');
+    bbsGroupSn = pathParts[pathParts.length - 1];
+    
+    console.log("bbsGroupSn:", bbsGroupSn);
+    
+    // 게시판 정보 및 게시글 목록 로드
+    loadBoardData(currentPage, currentKeyword);
+    
+    // 검색 버튼 클릭
+    document.querySelector("#btnSearch").addEventListener("click", function(){
+        currentKeyword = document.querySelector("#keyword").value;
+        currentPage = 1; // 검색 시 첫 페이지로
+        loadBoardData(currentPage, currentKeyword);
+    });
+    
+    // 엔터키 검색
+    document.querySelector("#keyword").addEventListener("keypress", function(e){
+        if(e.key === "Enter"){
+            e.preventDefault();
+            document.querySelector("#btnSearch").click();
+        }
+    });
+    
+    // 전체보기 버튼
+    document.querySelector("#btnShowAll").addEventListener("click", function(){
+        document.querySelector("#keyword").value = "";
+        currentKeyword = "";
+        currentPage = 1;
+        loadBoardData(currentPage, currentKeyword);
+    });
+});
+
+// 게시판 데이터 로드 함수
+function loadBoardData(page, keyword) {
+    const url = "/bbs/board/" + bbsGroupSn + "/data?currentPage=" + page + "&keyword=" + encodeURIComponent(keyword);
+    
+    fetch(url, {
+        method: "GET"
+    })
+    .then(response => {
+        if(!response.ok) {
+            throw new Error("서버 응답 오류");
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("게시판 데이터:", data);
+        displayBoardInfo(data.bbsGroup);
+        displayBbsList(data.bbsList);
+        displayPaging(data.articlePage);
+    })
+    .catch(error => {
+        console.error("데이터 로드 오류:", error);
+        alert("게시판 데이터를 불러오는데 실패했습니다.");
+    });
+}
+
+// 게시판 정보 표시
+function displayBoardInfo(bbsGroup) {
+    document.querySelector("#bbsGroupName").textContent = bbsGroup.bbsNm;
+    
+    // 글쓰기 버튼에 bbsGroupSn 설정
+    const writeBtn = document.querySelector("#btnWrite");
+    if(writeBtn) {
+        writeBtn.href = "/bbs/register?bbsGroupSn=" + bbsGroupSn;
+    }
+}
+
+// 날짜 포맷팅 함수 (yyyy-MM-dd)
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return year + '-' + month + '-' + day;
+}
+
+// 게시글 목록 표시
+function displayBbsList(bbsList) {
+    const tbody = document.querySelector("#bbsListBody");
+    tbody.innerHTML = "";
+    
+    if(!bbsList || bbsList.length === 0) {
+        const message = currentKeyword ? "검색 결과가 없습니다." : "등록된 게시글이 없습니다.";
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center;">\${message}</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    bbsList.forEach(bbs => {
+        const tr = document.createElement("tr");
+        
+        // 검색어가 있으면 배지 표시
+        const searchBadge = currentKeyword ? '<span class="badge badge-info ml-2">검색됨</span>' : '';
+        
+        tr.innerHTML = `
+            <td style="text-align: center;">\${bbs.rnum}</td>
+            <td>
+                \${searchBadge}
+                <a href="/bbs/detail/\${bbs.bbsDetailNo}">\${bbs.sj}</a>
+            </td>
+            <td style="text-align: center;">\${bbs.mberId}</td>
+            <td style="text-align: center;">\${formatDate(bbs.writngDt)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// 페이징 표시
+function displayPaging(articlePage) {
+    const pagingArea = document.querySelector("#pagingArea");
+    
+    if(!articlePage || !articlePage.pagingArea) {
+        pagingArea.innerHTML = "";
+        return;
+    }
+    
+    // 서버에서 생성된 페이징 HTML을 그대로 사용
+    pagingArea.innerHTML = articlePage.pagingArea;
+    
+    // 페이지 링크에 이벤트 리스너 추가
+    const pageLinks = pagingArea.querySelectorAll("a");
+    pageLinks.forEach(link => {
+        link.addEventListener("click", function(e){
+            e.preventDefault();
+            
+            // href에서 페이지 번호 추출
+            const href = this.getAttribute("href");
+            const pageMatch = href.match(/currentPage=(\d+)/);
+            
+            if(pageMatch) {
+                currentPage = parseInt(pageMatch[1]);
+                loadBoardData(currentPage, currentKeyword);
+            }
+        });
+    });
+}
+</script>
+<style>
+.pagination {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+}
+.pagination li {
+    margin: 0 5px;
+}
+.pagination a {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    text-decoration: none;
+    color: #007bff;
+}
+.pagination a:hover {
+    background-color: #f0f0f0;
+}
+.pagination .active a {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+</style>
+</head>
+<body>
+
+<%@ include file="../include/header.jsp"%>
+
+ <div class="jumbotron">
+    <div class="container">
+       <h1 class="display-3">게시글 목록</h1>      
+    </div>
+ </div>
+
+<!-- /// body 시작 /// -->
+<div class="container">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 id="bbsGroupName">로딩중...</h2>
+    </div>
+    
+    <!-- 검색 폼 -->
+    <div style="margin-bottom: 20px;">
+        <div class="form-inline">
+            <input type="text" id="keyword" class="form-control mr-2" 
+                   placeholder="제목, 내용, 작성자 검색" style="width: 300px;">
+            <button type="button" id="btnSearch" class="btn btn-info">검색</button>
+            <button type="button" id="btnShowAll" class="btn btn-secondary ml-2">전체보기</button>
+        </div>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th style="width: 80px;">번호</th>
+                <th>제목</th>
+                <th style="width: 150px;">작성자</th>
+                <th style="width: 150px;">작성일</th>
+            </tr>
+        </thead>
+        <tbody id="bbsListBody">
+            <!-- 게시글 목록이 동적으로 로드됩니다 -->
+            <tr>
+                <td colspan="4" style="text-align: center;">로딩중...</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <!-- 페이징 영역 -->
+    <div class="card-footer clearfix">
+        <div id="pagingArea" style="text-align: center;">
+            <!-- 페이징이 동적으로 로드됩니다 -->
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <!-- 로그인한 사용자만 글쓰기 버튼 표시 -->
+        <sec:authorize access="isAuthenticated()">
+            <a href="#" id="btnWrite" class="btn btn-primary">글쓰기</a>
+        </sec:authorize>
+        <a href="/bbs/bbsGroupList" class="btn btn-secondary">목록으로</a>
+    </div>
+</div>
+
+<!-- /// body 끝 /// -->
+
+<%@ include file="../include/footer.jsp"%>
+
+</body>
+</html>

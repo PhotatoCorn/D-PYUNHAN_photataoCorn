@@ -1,0 +1,494 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>게시글 상세</title>
+<style>
+	.answer-item {
+		padding: 15px;
+		border-bottom: 1px solid #eee;
+		margin-bottom: 10px;
+	}
+	.reply-item {
+		padding: 10px;
+		margin-left: 40px;
+		border-left: 3px solid #007bff;
+		background-color: #f8f9fa;
+		margin-bottom: 5px;
+	}
+	.answer-content {
+		margin: 10px 0;
+	}
+	.answer-info {
+		font-size: 0.85em;
+		color: #666;
+	}
+	.reply-form {
+		margin-left: 40px;
+		margin-top: 10px;
+		display: none;
+	}
+	.btn-sm {
+		font-size: 0.8em;
+		padding: 2px 8px;
+	}
+</style>
+<script type="text/javascript">
+// DOMContentLoaded 밖으로 함수들을 빼내기
+const bbsDetailNo = ${bbs.bbsDetailNo};
+const bbsGroupSn = ${bbs.bbsGroupSn};
+
+// 댓글 등록 (전역 함수로 선언)
+function addAnswer() {
+    console.log("addAnswer 함수 실행");
+    
+    const answerContentElement = document.querySelector("#answerContent");
+    if (!answerContentElement) {
+        console.error("answerContent 요소를 찾을 수 없습니다");
+        return;
+    }
+    
+    const cn = answerContentElement.value;
+    
+    if(!cn || cn.trim() === "") {
+        alert("댓글 내용을 입력하세요.");
+        return;
+    }
+    
+    let data = {
+        "bbsDetailNo": bbsDetailNo,
+        "bbsGroupSn": bbsGroupSn,
+        "cn": cn,
+    };
+    
+    console.log("전송 데이터:", data);
+    
+    fetch("/bbs/answer/insert", {
+        method: "POST",
+        headers: {"Content-Type": "application/json;charset=UTF-8"},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log("결과:", result);
+        if(result.result > 0) {
+            document.querySelector("#answerContent").value = "";
+            renderAnswerList(result.answerList, result.mberId, result.answerCount);
+        }
+    })
+    .catch(error => {
+        console.error("error:", error);
+        alert("댓글 등록 오류: " + error);
+    });
+}
+
+// 대댓글 등록
+function addReply(answerNo) {
+    const cn = document.querySelector("#replyContent_" + answerNo).value;
+    
+    if(!cn || cn.trim() === "") {
+        alert("대댓글 내용을 입력하세요.");
+        return;
+    }
+    
+    let data = {
+        "bbsDetailNo": bbsDetailNo,
+        "bbsGroupSn": bbsGroupSn,
+        "cn": cn,
+        "upperAnswerNo": answerNo
+    };
+    
+    fetch("/bbs/answer/insert", {
+        method: "POST",
+        headers: {"Content-Type": "application/json;charset=UTF-8"},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if(result.result > 0) {
+            document.querySelector("#replyContent_" + answerNo).value = "";
+            toggleReplyForm(answerNo);
+            renderAnswerList(result.answerList, result.mberId, result.answerCount);
+        }
+    })
+    .catch(error => {
+        console.error("error:", error);
+        alert("대댓글 등록 오류: " + error);
+    });
+}
+
+// 대댓글 입력폼 토글
+function toggleReplyForm(answerNo) {
+    const replyForm = document.querySelector("#replyForm_" + answerNo);
+    if(replyForm.style.display === "none" || replyForm.style.display === "") {
+        replyForm.style.display = "block";
+    } else {
+        replyForm.style.display = "none";
+    }
+}
+
+// 댓글 수정 모드
+function editAnswer(answerNo) {
+    fetch("/bbs/answer/detail", {
+        method: "POST",
+        headers: {"Content-Type": "application/json;charset=UTF-8"},
+        body: JSON.stringify({"answerNo": answerNo})
+    })
+    .then(response => response.json())
+    .then(result => {
+        if(result.result > 0) {
+            document.querySelector("#modalEditAnswerNo").value = result.answerVO.answerNo;
+            document.querySelector("#modalEditAnswerContent").value = result.answerVO.cn;
+        }
+    });
+}
+
+// 댓글 삭제 확인
+function confirmDeleteAnswer(answerNo) {
+    document.querySelector("#modalDeleteAnswerNo").value = answerNo;
+}
+
+// 댓글 목록 렌더링
+function renderAnswerList(answerList, currentMberId, answerCount) {
+    let html = '';
+    
+    answerList.forEach(function(answer) {
+        html += '<div class="answer-item" id="answer_' + answer.answerNo + '">';
+        html += '  <div class="answer-info">';
+        html += '    <strong>' + answer.mberId + '</strong>';
+        html += '    <span> | ' + formatDate(answer.writngDt) + '</span>';
+        html += '  </div>';
+        html += '  <div class="answer-content" id="answerContent_' + answer.answerNo + '">' + answer.cn + '</div>';
+        html += '  <div>';
+        html += '    <button type="button" class="btn btn-info btn-sm" onclick="toggleReplyForm(' + answer.answerNo + ')">답글</button>';
+        
+        if(currentMberId === answer.mberId) {
+            html += '    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEdit" onclick="editAnswer(' + answer.answerNo + ')">수정</button>';
+            html += '    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#modalDelete" onclick="confirmDeleteAnswer(' + answer.answerNo + ')">삭제</button>';
+        }
+        
+        html += '  </div>';
+        
+        html += '  <div class="reply-form" id="replyForm_' + answer.answerNo + '">';
+        html += '    <textarea class="form-control form-control-sm" id="replyContent_' + answer.answerNo + '" rows="2" placeholder="답글을 입력하세요"></textarea>';
+        html += '    <button type="button" class="btn btn-primary btn-sm mt-1" onclick="addReply(' + answer.answerNo + ')">답글 등록</button>';
+        html += '    <button type="button" class="btn btn-secondary btn-sm mt-1" onclick="toggleReplyForm(' + answer.answerNo + ')">취소</button>';
+        html += '  </div>';
+        
+        if(answer.replyList && answer.replyList.length > 0) {
+            answer.replyList.forEach(function(reply) {
+                html += '<div class="reply-item" id="answer_' + reply.answerNo + '">';
+                html += '  <div class="answer-info">';
+                html += '    <strong>' + reply.mberId + '</strong>';
+                html += '    <span> | ' + formatDate(reply.writngDt) + '</span>';
+                html += '  </div>';
+                html += '  <div class="answer-content" id="answerContent_' + reply.answerNo + '">' + reply.cn + '</div>';
+                
+                if(currentMberId === reply.mberId) {
+                    html += '  <div>';
+                    html += '    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEdit" onclick="editAnswer(' + reply.answerNo + ')">수정</button>';
+                    html += '    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#modalDelete" onclick="confirmDeleteAnswer(' + reply.answerNo + ')">삭제</button>';
+                    html += '  </div>';
+                }
+                
+                html += '</div>';
+            });
+        }
+        
+        html += '</div>';
+    });
+    
+    document.querySelector("#answerList").innerHTML = html;
+    document.querySelector("#answerCount").innerText = answerCount;
+}
+
+// 날짜 포맷
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+    // 게시글 삭제
+    const btnDelete = document.querySelector("#btnDelete");
+    if (btnDelete) {
+        btnDelete.addEventListener("click", function(){
+            if(!confirm("삭제하시겠습니까? \n삭제된 게시글은 복구할 수 없습니다.")){
+                return;
+            }
+
+            fetch("/bbs/delete/" + bbsDetailNo, {
+                method: "POST",
+                headers: {"Content-Type": "application/json;charset=UTF-8"}
+            })
+            .then(response => response.json())
+            .then(result => {
+                if(result.success){
+                    alert("게시글이 삭제되었습니다.");
+                    location.href = "/bbs/board/" + bbsGroupSn;
+                } else {
+                    alert(result.message);
+                }
+            })
+            .catch(error => {
+                console.error("삭제 error:", error);
+                alert("삭제 요청 오류 발생: " + error);
+            });
+        });
+    }
+    
+    // 댓글 수정 실행
+    document.querySelector("#modalEditConfirm").addEventListener("click", function() {
+        const answerNo = document.querySelector("#modalEditAnswerNo").value;
+        const cn = document.querySelector("#modalEditAnswerContent").value;
+        
+        if(!cn || cn.trim() === "") {
+            alert("댓글 내용을 입력하세요.");
+            return;
+        }
+        
+        let data = {
+            "answerNo": answerNo,
+            "cn": cn
+        };
+        
+        fetch("/bbs/answer/update", {
+            method: "POST",
+            headers: {"Content-Type": "application/json;charset=UTF-8"},
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if(result.result > 0) {
+                document.querySelector("#answerContent_" + answerNo).innerText = result.answerVO.cn;
+                document.querySelector("#modalEditClose").click();
+            } else {
+                alert(result.message);
+            }
+        })
+        .catch(error => {
+            console.error("error:", error);
+            alert("댓글 수정 오류: " + error);
+        });
+    });
+    
+    // 댓글 삭제 실행
+    document.querySelector("#modalDeleteConfirm").addEventListener("click", function() {
+        const answerNo = document.querySelector("#modalDeleteAnswerNo").value;
+        
+        fetch("/bbs/answer/delete/" + answerNo, {
+            method: "POST",
+            headers: {"Content-Type": "application/json;charset=UTF-8"}
+        })
+        .then(response => response.json())
+        .then(result => {
+            if(result.result > 0) {
+                document.querySelector("#answer_" + answerNo).remove();
+                document.querySelector("#modalDeleteClose").click();
+                
+                const countElement = document.querySelector("#answerCount");
+                const currentCount = parseInt(countElement.innerText);
+                countElement.innerText = currentCount - 1;
+            } else {
+                alert(result.message);
+            }
+        })
+        .catch(error => {
+            console.error("error:", error);
+            alert("댓글 삭제 오류: " + error);
+        });
+    });
+});
+</script>
+</head>
+<body>
+
+
+<%@ include file="../include/header.jsp"%>
+
+<!-- /// 타이틀 시작 /// -->
+ <div class="d-sm-flex align-items-center justify-content-between mb-4">
+     <h1 class="h3 mb-0 text-gray-800">게시글 상세</h1>
+ </div>
+<!-- /// 타이틀 끝 /// -->
+
+<!-- /// body 시작 /// -->
+	<div class="card card-primary">
+		<div class="card-header">
+			<h3 class="card-title">게시글 상세</h3>
+		</div>
+    
+    <div class="card-body">
+        <!-- 게시글 정보 -->
+        <div class="info-row">
+            <div>
+                <strong>제목</strong> ${bbs.sj}
+            </div>
+            <div>
+                <strong>작성자:</strong> ${bbs.mberId}
+            </div>
+            <div>
+                <strong>작성일:</strong> <fmt:formatDate value="${bbs.writngDt}" pattern="yyyy-MM-dd HH:mm:ss"/>
+            </div>
+        </div>
+        
+        <!-- 게시글 내용 -->
+        <div class="form-group" style="margin-top: 20px;">
+            <label for="bbsCn">내용</label>
+            <div class="bbs-content">
+                ${bbs.cn}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 첨부파일 목록 표시 -->
+<c:if test="${not empty fileList}">
+    <div class="form-group">
+        <label>첨부파일</label>
+        <div class="attached-files">
+            <c:forEach var="file" items="${fileList}">
+                <div class="file-item">
+                    <i class="fas fa-paperclip"></i>
+                    <a href="/file/download?fileGroupSn=${file.fileGroupSn}&fileNo=${file.fileNo}">
+                        ${file.fileOrginlNm}
+                    </a>
+					<span class="file-size">(<fmt:formatNumber value="${file.fileMg / 1024}" pattern="#,##0.00"/> KB)</span>
+                </div>
+            </c:forEach>
+        </div>
+    </div>
+</c:if>
+
+<!-- 로그인한 사용자 ID 가져오기 -->
+<sec:authorize access="isAuthenticated()">
+    <sec:authentication property="principal.mberVO.mberId" var="currentUserId"/>
+</sec:authorize>
+
+<!-- 작성자와 로그인 사용자가 같을 때만 수정/삭제 버튼 표시 -->
+<c:if test="${bbs.mberId == currentUserId}">
+    <a href="/bbs/edit/${bbs.bbsDetailNo}" class="btn btn-warning">수정</a>
+    <button type="button" id="btnDelete" class="btn btn-danger">삭제</button>
+</c:if>
+
+<a href="/bbs/board/${bbs.bbsGroupSn}" class="btn btn-success">목록</a>
+
+
+<!-- 댓글 영역 (댓글 가능한 게시판인 경우) -->
+<c:if test="${bbsGroup.answerAt == 1}">
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title">댓글 (<span id="answerCount">${answerCount}</span>)</h3>
+        </div>
+        <div class="card-body">
+            <!-- 댓글 목록 -->
+            <div id="answerList">
+            	<c:forEach var="answer" items="${answerList}">
+            		<div class="answer-item" id="answer_${answer.answerNo}">
+            			<div class="answer-info">
+            				<strong>${answer.mberId}</strong>
+            				<span> | <fmt:formatDate value="${answer.writngDt}" pattern="yyyy-MM-dd HH:mm"/></span>
+            			</div>
+            			<div class="answer-content" id="answerContent_${answer.answerNo}">${answer.cn}</div>
+            			<div>
+            				<button type="button" class="btn btn-info btn-sm" onclick="toggleReplyForm(${answer.answerNo})">답글</button>
+            				<c:if test="${answer.mberId == currentUserId}">
+            					<button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEdit" onclick="editAnswer(${answer.answerNo})">수정</button>
+            					<button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#modalDelete" onclick="confirmDeleteAnswer(${answer.answerNo})">삭제</button>
+            				</c:if>
+            			</div>
+            			
+            			<!-- 대댓글 입력 폼 -->
+            			<div class="reply-form" id="replyForm_${answer.answerNo}">
+            				<textarea class="form-control form-control-sm" id="replyContent_${answer.answerNo}" rows="2" placeholder="답글을 입력하세요"></textarea>
+            				<button type="button" class="btn btn-primary btn-sm mt-1" onclick="addReply(${answer.answerNo})">답글 등록</button>
+            				<button type="button" class="btn btn-secondary btn-sm mt-1" onclick="toggleReplyForm(${answer.answerNo})">취소</button>
+            			</div>
+            			
+            			<!-- 대댓글 목록 -->
+            			<c:forEach var="reply" items="${answer.replyList}">
+            				<div class="reply-item" id="answer_${reply.answerNo}">
+            					<div class="answer-info">
+            						<strong>${reply.mberId}</strong>
+            						<span> | <fmt:formatDate value="${reply.writngDt}" pattern="yyyy-MM-dd HH:mm"/></span>
+            					</div>
+            					<div class="answer-content" id="answerContent_${reply.answerNo}">${reply.cn}</div>
+            					<c:if test="${reply.mberId == currentUserId}">
+            						<div>
+            							<button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEdit" onclick="editAnswer(${reply.answerNo})">수정</button>
+            							<button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#modalDelete" onclick="confirmDeleteAnswer(${reply.answerNo})">삭제</button>
+            						</div>
+            					</c:if>
+            				</div>
+            			</c:forEach>
+            		</div>
+            	</c:forEach>
+            </div>
+            
+            <!-- 댓글 작성 폼 -->
+            <sec:authorize access="isAuthenticated()">
+                <div class="mt-3">
+                    <textarea class="form-control" id="answerContent" rows="3" placeholder="댓글을 입력하세요"></textarea>
+                    <button type="button" class="btn btn-primary mt-2" onclick="addAnswer()">댓글 작성</button>
+                </div>
+            </sec:authorize>
+        </div>
+    </div>
+</c:if>
+
+<!-- 댓글 수정 모달 -->
+<div class="modal fade" id="modalEdit">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">댓글 수정</h4>
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+			</div>
+			<div class="modal-body">
+				<input type="hidden" id="modalEditAnswerNo" />
+				<textarea class="form-control" id="modalEditAnswerContent" rows="3"></textarea>
+			</div>
+			<div class="modal-footer">
+				<button type="button" id="modalEditClose" class="btn btn-secondary" data-dismiss="modal">취소</button>
+				<button type="button" id="modalEditConfirm" class="btn btn-primary">수정</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- 댓글 삭제 모달 -->
+<div class="modal fade" id="modalDelete">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">댓글 삭제</h4>
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+			</div>
+			<div class="modal-body">
+				<input type="hidden" id="modalDeleteAnswerNo" />
+				<p>댓글을 삭제하시겠습니까?</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" id="modalDeleteClose" class="btn btn-secondary" data-dismiss="modal">취소</button>
+				<button type="button" id="modalDeleteConfirm" class="btn btn-danger">삭제</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- /// body 끝 /// -->
+
+<%@ include file="../include/footer.jsp"%>
+
+</body>
+</html>

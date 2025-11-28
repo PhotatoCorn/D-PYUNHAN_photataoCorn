@@ -1,0 +1,56 @@
+package kr.or.ddit.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.mapper.AnswerMapper;
+import kr.or.ddit.service.AnswerService;
+import kr.or.ddit.vo.AnswerVO;
+
+@Service
+public class AnswerServiceImpl implements AnswerService {
+	
+	@Autowired
+	AnswerMapper answerMapper;
+
+	@Override
+	public List<AnswerVO> getAnswerList(long bbsDetailNo) {
+		// 1. 최상위 댓글들을 조회
+		List<AnswerVO> answerList = this.answerMapper.getAnswerList(bbsDetailNo);
+		
+		// 2. 각 댓글의 대댓글들을 조회하여 세팅
+		for(AnswerVO answerVO : answerList) {
+			List<AnswerVO> replyList = this.answerMapper.getReplyList(answerVO.getAnswerNo());
+			answerVO.setReplyList(replyList);
+		}
+		
+		return answerList;
+	}
+
+	@Override
+	public int insertAnswer(AnswerVO answerVO) {
+		return this.answerMapper.insertAnswer(answerVO);
+	}
+
+	@Override
+	public AnswerVO getAnswer(long answerNo) {
+		return this.answerMapper.getAnswer(answerNo);
+	}
+
+	@Override
+	public int updateAnswer(AnswerVO answerVO) {
+		return this.answerMapper.updateAnswer(answerVO);
+	}
+
+	@Override
+	public int deleteAnswer(long answerNo) {
+		return this.answerMapper.deleteAnswer(answerNo);
+	}
+
+	@Override
+	public int getAnswerCount(long bbsDetailNo) {
+		return this.answerMapper.getAnswerCount(bbsDetailNo);
+	}
+}

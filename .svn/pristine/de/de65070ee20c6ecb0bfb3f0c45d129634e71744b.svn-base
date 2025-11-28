@@ -1,0 +1,27 @@
+package kr.or.ddit.vo;
+
+import java.util.List;
+
+import lombok.Data;
+
+@Data
+public class VoteMtrVO {
+	private int voteMtrSn;
+	private String mtrSj;
+	private String mtrCn;
+	private String voteBeginDt;
+	private String voteEndDt;
+	private String empId;
+	private int rnum;          // 페이지 번호용 (ROWNUM)
+	
+	//alias로 투표숫자
+	private int votedNum;
+	//세부항목별 id숫자(alias)
+	private int Cnt;
+	//행숫자(페이징)
+	//VOTE_IEM 테이블
+	List<VoteIemVO> voteIemVOList;
+	
+//	//VOTE_MANAGE_TRIGER 테이블
+//	List<VoteManageTrgterVO> VoteManageTrgterVOList;
+}

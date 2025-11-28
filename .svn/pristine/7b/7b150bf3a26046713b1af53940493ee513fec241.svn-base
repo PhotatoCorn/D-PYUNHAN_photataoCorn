@@ -1,0 +1,449 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>dpunhan-index</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+
+<!-- Favicons -->
+<link href="/dewi/assets/img/favicon.png" rel="icon">
+<link href="/dewi/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+<link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@100..900&family=Raleway:wght@100..900&family=Inter:wght@100..900&display=swap"
+    rel="stylesheet">
+
+<!-- Vendor CSS Files -->
+<link href="/dewi/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="/dewi/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+<!-- ✅ 아이콘 경로 보정용 CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link href="/dewi/assets/vendor/aos/aos.css" rel="stylesheet">
+
+
+<!-- Main CSS File -->
+<link href="/dewi/assets/css/main.css" rel="stylesheet">
+
+<link rel="stylesheet" href="/adminlte/plugins/summernote/summernote-bs4.min.css">
+
+<style>
+:root {
+    --frame-width: 480px;
+    --frame-radius: 18px;
+}
+
+html, body {
+    height: 100%;
+    overflow-y: auto; /* ✅ PC에서도 body 스크롤 허용 */
+	overflow-x: hidden;
+	background-color: #f8f9fa;
+}
+
+body.index-page {
+    background: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+}
+
+.mobile-frame {
+    width: 100%;
+    max-width: var(--frame-width);
+    margin: 0 auto;
+
+    min-height: 100vh;   /* height 대신 min-height 사용 */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .12);
+    border-radius: var(--frame-radius);
+
+    overflow-x: hidden;
+    overflow-y: auto;    /* scroll 대신 auto */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+    
+    padding-top: 55px;
+    padding-bottom: 55px; /* 푸터 높이 */
+    box-sizing: border-box; /* 패딩 포함 계산 */
+}
+
+/* PC에서만 스크롤 막기 */
+@media (min-width: 769px) {
+  .mobile-frame .header,
+  .mobile-frame .footer {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: var(--frame-width);
+  }
+}
+
+/* Chrome, Edge, Safari */
+.mobile-frame::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+}
+
+img, video {
+    max-width: 100%;
+    height: auto;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.mobile-frame .header {
+    background-color: #648ca4;
+    top: 0;
+    z-index: 1056;
+    transition: background-color .25s, box-shadow .25s, backdrop-filter .25s, opacity .25s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+    position: fixed;
+    border-top-left-radius: var(--frame-radius);
+    border-top-right-radius: var(--frame-radius);
+    overflow: visible;
+    min-height: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: var(--frame-width);
+    flex-shrink: 0 !important;
+}
+
+.mobile-frame .footer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: var(--frame-width);
+    height: 60px;
+    z-index: 1056;
+    background-color: #648ca4;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, .06);
+    transition: background-color .25s, box-shadow .25s, backdrop-filter .25s, opacity .25s;
+    border-bottom-left-radius: var(--frame-radius);
+    border-bottom-right-radius: var(--frame-radius);
+    overflow: visible;
+    margin-top: auto;
+}
+
+/* .mobile-frame .header.scrolled { */
+/*     background: rgba(100, 140, 164, 0.2); */
+/*     backdrop-filter: saturate(140%) blur(8px); */
+/*     box-shadow: 0 4px 16px rgba(0, 0, 0, .08); */
+/* } */
+
+/* .mobile-frame .footer.scrolled { */
+/*     background: rgba(100, 140, 164, .10); */
+/*     backdrop-filter: saturate(140%) blur(8px); */
+/*     box-shadow: 0 -4px 16px rgba(0, 0, 0, .08); */
+/* } */
+
+.mobile-frame .container-xl {
+    max-width: 100% !important;
+    padding: 0 16px;
+}
+
+body.mobile-nav-active .mobile-frame .header, 
+.mobile-frame .header.nav-open {
+    background-color: rgba(100, 140, 164, .75) !important;
+    backdrop-filter: saturate(140%) blur(8px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .08) !important;
+}
+
+.mobile-list .card {
+    border-radius: 14px;
+}
+
+.mobile-list .card:hover {
+    background: #fffdf8;
+}
+
+.mobile-list .text-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ====== PC에서 창을 좁혔을 때도 헤더/푸터가 잘리지 않도록(콘텐츠 안 사라지게) ====== */
+/* ✅ 헤더/푸터 잘림 완전 방지: transform 제거하고 가운데 정렬 유지 */
+.mobile-frame .header,
+.mobile-frame .footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  transform: none !important;
+  width: 100%;
+  max-width: var(--frame-width);
+  margin: 0 auto;
+  overflow: visible !important;
+  box-sizing: border-box;
+}
+
+/* 내부 컨테이너는 여전히 프레임 중앙 정렬 */
+.mobile-frame .header .container-fluid,
+.mobile-frame .footer .container-fluid {
+  max-width: var(--frame-width);
+  width: 100%;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+/* 창이 너무 좁아지면 100vw로 자동 전환 */
+/* =====================[ 모바일 헤더/푸터 표시 안정화 ]===================== */
+/* ===== 모바일(≤480px)에서만 헤더/푸터 안정화 ===== */
+/* ======= 모바일 폭 축소 시 헤더·푸터 내부 컨텐츠 사라짐 방지 ======= */
+/* === [핵심 수정] 헤더 구조 고정 === */
+/* === 기존 구조 유지하면서 flex깨짐 복원 === */
+#header.container-fluid,
+#header .container-fluid {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* 로고, 메뉴, 사용자메뉴가 한 줄 유지되도록 */
+#header .d-flex.align-items-center.ms-auto.gap-2 {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  width: auto !important;
+}
+
+/* 메뉴 nav들 block화 방지 */
+#navmenu,
+#user-menu {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0 !important;
+}
+
+/* brand가 줄바꿈되지 않게 */
+#header .brand-link {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* 모바일 환경에서도 강제 한 줄 정렬 */
+@media (max-width: 480px) {
+  #header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  #header .container-fluid {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+  }
+
+  #header .brand-link img {
+    width: 42px !important;
+    height: 42px !important;
+  }
+}
+
+/* --- 모바일 헤더 3줄 깨짐 방지 --- */
+#header .container-fluid {
+  position: static !important; /* ← sticky-top과 겹치며 flex 깨지는 문제 제거 */
+}
+
+#header .d-flex.align-items-center.ms-auto.gap-2 {
+  flex: 0 0 auto !important; /* 자식 폭 100% 확장 방지 */
+}
+
+#navmenu {
+  margin-left: auto !important; /* 오른쪽 정렬 유지 */
+}
+
+#header .container-fluid.position-relative {
+  position: static !important; /* flex 레이아웃 깨짐 방지 */
+}
+
+.container-xl {
+  display: flex !important;
+}
+
+header#header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+header#header > .container-fluid {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  position: static !important; /* position-relative 제거 효과 */
+}
+
+header#header * {
+  flex-shrink: 0 !important; /* 아이콘이나 메뉴가 강제로 줄바꿈되지 않도록 */
+}
+
+/* footer 아이콘과 텍스트 줄맞춤 유지 */
+#footer ul li a {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+}
+/* ===== 아이콘, 텍스트 숨김 방지 (Dewi 모바일 보정) ===== */
+@media (max-width: 768px) {
+  .mobile-frame .header,
+  .mobile-frame .footer {
+    left: 0;
+    right: 0;
+    transform: none !important;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* footer 아이콘과 텍스트 줄맞춤 유지 */
+  #footer ul li a {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+}
+
+#home {
+  position: relative;
+  top: -60px; /* 헤더 높이에 맞춰 보정 */
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.testimonials {
+  padding-bottom: 60px;
+}
+
+#levy, #resve, #vote, #notice, #vehicle, #calender {
+  scroll-margin-top: 60px;
+}
+</style>
+</head>
+
+<body class="index-page">
+    <div class="mobile-frame">
+
+        <header id="header" class="header sticky-top" style="padding-top:4px; padding-bottom:4px;">
+  <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
+    
+    <!-- 로고 -->
+    <a href="/main" class="brand-link d-flex align-items-center gap-2 text-decoration-none">
+      <img src="/images/logo1.png" alt="로고"
+           class="brand-image img-circle elevation-3"
+           style="width:50px; height:50px; object-fit:cover; border-radius:50%; opacity:.9; box-shadow:0 0 8px rgba(0,0,0,.15);">
+    </a>
+
+    <!-- 메뉴 + 로그인 -->
+    <div class="d-flex align-items-center ms-auto gap-2 flex-nowrap">
+
+      <!-- 메뉴 -->
+<!--       <nav id="header-navmenu" class="navmenu mx-auto"> -->
+<!--         <ul> -->
+<!--           <li class="dropdown open-left"> -->
+<!--             <a href="#"> -->
+<!--               <span><i class="bi bi-menu-button-wide">&nbsp;menu</i></span> -->
+<!--               <i class="bi bi-chevron-down toggle-dropdown"></i> -->
+<!--             </a> -->
+<!--             <ul> -->
+<!--               <li class="dropdown open-left"> -->
+<!--                 <a href="/rqest/rqest"><span><i class="bi bi-cash-coin"></i>&nbsp;관리비</span></a> -->
+<!--               </li> -->
+<!--               <li class="dropdown open-left"> -->
+<!--                 <a href="#"><span><i class="bi bi-caret-left"></i>&nbsp;민원</span> -->
+<!--                   <i class="bi bi-chevron-down toggle-dropdown"></i></a> -->
+<!--                 <ul> -->
+<!--                   <li><a href="/cvpl/list">민원 등록<i class="bi bi-chat-left-text"></i></a></li> -->
+<!--                   <li><a href="/visit/reserve">방문 차량 예약<i class="bi bi-car-front-fill"></i></a></li> -->
+<!--                 </ul> -->
+<!--               </li> -->
+<!--               <li class="dropdown open-left"> -->
+<!--                 <a href="#resve"><span><i class="bi bi-caret-left"></i>&nbsp;예약</span> -->
+<!--                   <i class="bi bi-chevron-down toggle-dropdown"></i></a> -->
+<!--                 <ul> -->
+<!--                   <li><a href="resve/list">편의시설 예약<i class="bi bi-house-check"></i></a></li> -->
+<!--                 </ul> -->
+<!--               </li> -->
+<!--               <li class="dropdown open-left"> -->
+<!--                 <a href="#"><span><i class="bi bi-caret-left"></i>&nbsp;게시판/투표</span> -->
+<!--                   <i class="bi bi-chevron-down toggle-dropdown"></i></a> -->
+<!--                 <ul> -->
+<!--                   <li><a href="/bbs/bbsGroupList">게시판목록</a></li> -->
+<!--                   <li><a href="/vote/memVoteList">주민 투표</a></li> -->
+<!--                   <li><a href="#notice">주민 공지사항</a></li> -->
+<!--                 </ul> -->
+<!--               </li> -->
+<!--               <li><a href="#">Dropdown 2</a></li> -->
+<!--             </ul> -->
+<!--           </li> -->
+<!--         </ul> -->
+<!--         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i> -->
+<!--       </nav> -->
+
+      <!-- 로그인 / 로그아웃 -->
+      <nav id="user-menu" class="navmenu mx-auto">
+        <ul>
+          <li class="dropdown open-left" style="margin-left:12px;">
+            <sec:authorize access="isAuthenticated()">
+              <sec:authentication property="principal.mberVO" var="mberVO" />
+              <a href="#" style="display:flex; align-items:center; gap:6px;">
+                <i class="bi bi-person-circle"></i>
+                <span>${mberVO.mberNm}님</span>
+                <i class="bi bi-chevron-down toggle-dropdown"></i>
+              </a>
+              <ul style="min-width:160px; right:0; margin-top:6px; z-index:3000;">
+                <li>
+                  <form action="/logout" method="post" style="margin:0; padding:8px;">
+                    <button type="submit" class="btn">로그아웃</button>
+                  </form>
+                </li>
+              </ul>
+            </sec:authorize>
+            <sec:authorize access="isAnonymous()">
+              <a href="/login" class="btn">로그인</a>
+            </sec:authorize>
+          </li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+
+    </div><!-- /.d-flex -->
+  </div><!-- /.container-fluid -->
+</header><!-- /header -->
+
+<!-- =============== /Dewi Header =============== -->
+
+<!-- 여기서부터 각 페이지의 본문이 들어갑니다. 푸터에서 </div> </body> </html> 을 닫아주세요. -->

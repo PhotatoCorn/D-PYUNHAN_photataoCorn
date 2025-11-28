@@ -1,0 +1,172 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<!DOCTYPE html>
+<html>
+<head>
+<title>게시글 등록</title>
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script type="text/javascript">
+let editor;
+
+document.addEventListener("DOMContentLoaded", function(){
+	
+	// CKEditor 초기화
+	ClassicEditor
+		.create(document.querySelector('#cn'))
+		.then(newEditor => {
+			editor = newEditor;
+		})
+		.catch(error => {
+			console.error('Editor error:', error);
+		});
+	
+	// 파일 선택 시 개수만 표시 (파일 첨부 가능한 경우에만)
+	const fileInput = document.querySelector("#multipartFiles");
+	if(fileInput) {  // 요소가 존재할 때만 이벤트 리스너 등록
+		fileInput.addEventListener("change", function(e){
+			const files = e.target.files;
+			const fileCount = document.querySelector("#fileCount");
+			
+			if(files.length > 0) {
+				fileCount.textContent = files.length + "개의 파일이 선택되었습니다.";
+				fileCount.style.color = "#28a745";
+			} else {
+				fileCount.textContent = "";
+			}
+		});
+	}
+
+	// 등록 버튼 클릭
+	document.querySelector("#btnRegister").addEventListener("click", function(){
+		
+		const bbsGroupSn = document.querySelector("#bbsGroupSn").value;
+		const sj = document.querySelector("#sj").value;
+		const cn = editor.getData();
+		
+		// 유효성 검사
+		if(!sj || sj.trim() === "") {
+			alert("제목을 입력하세요.");
+			return;
+		}
+		
+		if(!cn || cn.trim() === "") {
+			alert("내용을 입력하세요.");
+			return;
+		}
+		
+		const formData = new FormData();
+		
+		document.querySelectorAll(".bbsPost").forEach(elem => {
+		    if (elem.id === "cn") {
+		        formData.append(elem.name, editor.getData());
+		    } else {
+		        formData.append(elem.name, elem.value);
+		    }
+		});
+		
+		// 파일 첨부가 가능한 게시판인 경우에만 파일 추가
+		const uploadInput = document.querySelector("#multipartFiles");
+		if (uploadInput && uploadInput.files.length > 0) {
+		    for (let i = 0; i < uploadInput.files.length; i++) {
+		        formData.append("multipartFiles", uploadInput.files[i]);
+		    }
+		}
+		
+		// fetch 요청
+		fetch("/bbs/register", {
+			method: "POST",
+			body: formData
+		})
+		.then(response => {
+			if(!response.ok) {
+				throw new Error("서버 응답 오류");
+			}
+			return response.json();
+		})
+		.then(result => {
+			console.log("result:", result);
+			
+			if(result.result > 0) {
+				alert("게시글이 등록되었습니다.");
+				location.href = "/bbs/board/" + bbsGroupSn;
+			} else {
+				alert(result.message || "게시글 등록에 실패했습니다.");
+			}
+		})
+		.catch(error => {
+			console.error("error:", error);
+			alert("Fetch 요청 오류 발생: " + error);
+		});
+	});
+	
+	// 취소 버튼
+	document.querySelector("#btnCancel").addEventListener("click", function(){
+		if(confirm("작성을 취소하시겠습니까?")) {
+			history.back();
+		}
+	});
+});
+</script>
+</head>
+<body>
+
+
+<%@ include file="../include/header.jsp"%>
+
+<!-- /// 타이틀 시작 /// -->
+ <div class="d-sm-flex align-items-center justify-content-between mb-4">
+     <h1 class="h3 mb-0 text-gray-800">게시글 작성</h1>
+ </div>
+ <!-- /// 타이틀 끝 /// -->
+
+
+<!-- /// body 시작 /// -->
+	<div class="card card-primary">
+		<div class="card-header">
+			<h3 class="card-title">게시글 작성</h3>
+		</div>
+		<!-- /.card-header -->
+
+			<!-- bbsGroupSn을 으로 전달 -->
+			<input type="hidden" class="bbsPost" id="bbsGroupSn" name="bbsGroupSn" value="${bbsGroupSn}">
+
+			<div class="card-body">
+				<div class="form-group">
+					<label for="sj">제목</label>
+					<input type="text" class="form-control bbsPost" id="sj"	name="sj" placeholder="제목을 입력하세요">
+				</div>
+				<div class="form-group">
+					<label for="cn">내용</label>
+					<textarea class="form-control bbsPost" id="cn"	name="cn" placeholder="내용을 입력하세요 "></textarea>
+				</div>
+				<c:if test="${bbsGroup.atchFileAt == 1}">
+					<div class="form-group">
+						<label for="exampleInputFile">파일 첨부</label>
+						<div class="input-group">
+							<div class="custom-file">
+								<label class="custom-file-label" for="exampleInputFile">파일 선택</label>
+								<input type="file" class="custom-file-input" id="multipartFiles" name="multipartFiles" multiple />
+							</div>
+						</div>
+							<small id="fileCount" class="form-text" style="font-weight: 500;"></small>
+					</div>
+				</c:if>
+			</div>
+			
+			<!-- /.card-body -->
+
+			<div class="card-footer">
+				<button type="button" id="btnRegister" class="btn btn-primary">등록</button>
+				<button type="button" id="btnCancel" class="btn btn-secondary">취소</button>
+			</div>
+	</div>
+
+
+	<!-- /// body 끝 /// -->
+
+<%@ include file="../include/footer.jsp"%>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.ddit.mapper.PayMapper">
+
+    <sql id="where">
+        <if test="keyword != null and keyword != ''">
+            AND RQ.RQEST_YM LIKE '%' || #{keyword} || '%'
+        </if>
+    </sql>
+    
+   
+    <select id="list" resultType="kr.or.ddit.vo.PayVO">
+        SELECT *
+        FROM PAY
+    </select>
+
+
+    <!-- 결제내역 저장 -->
+    <insert id="insertPay" parameterType="kr.or.ddit.vo.PayVO">
+        INSERT INTO PAY (
+            PAY_SN,
+            RQEST_SN,
+            PAY_AMOUNT,
+            PAY_DT,
+            PAY_MTH
+        ) VALUES (
+            #{paySn},
+            #{rqestSn},
+            #{payAmount},
+            SYSDATE,
+            #{payMth}
+        )
+    </insert>
+
+    <select id="getTotal" parameterType="hashMap" resultType="int">
+        SELECT COUNT(*) FROM LEVY
+        WHERE 1=1
+        <include refid="where"/>
+    </select>
+
+</mapper>

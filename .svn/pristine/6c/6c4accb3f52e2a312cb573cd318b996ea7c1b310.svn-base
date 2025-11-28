@@ -1,0 +1,357 @@
+@charset "UTF-8";
+/* 모달 컨텐츠 */
+#detailModal .detail-modal-content {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 모달 헤더 */
+#detailModal .detail-modal-header {
+    background: #6b8aa7;
+    color: white;
+    padding: 0.9rem;
+    border: 0;
+    border-radius: 0;
+}
+
+#detailModal .detail-modal-title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* 모달 본문 */
+#detailModal .detail-modal-body {
+    padding: 1.2rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* 정보 행 (순번 + 작성일) */
+#detailModal .detail-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+#detailModal .detail-info-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+#detailModal .detail-info-item.detail-info-right {
+    text-align: right;
+}
+
+#detailModal .detail-info-label {
+    color: #888;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+#detailModal .detail-info-value {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+    white-space: nowrap;
+}
+
+#detailModal #noticeSn {
+    font-size: 1.1rem;
+}
+
+#detailModal #noticeWritngDt {
+    font-size: 0.95rem;
+}
+
+/* 구분선 */
+#detailModal .detail-divider {
+    border-bottom: 2px solid #eee;
+    margin-bottom: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* 제목 + 작성자 행 */
+#detailModal .detail-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+}
+
+#detailModal .detail-title-section {
+    flex: 1;
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+#detailModal .detail-title-value {
+    font-weight: 600;
+    margin: 0;
+    color: #333;
+    font-size: 1.05rem;
+    flex: 1;
+}
+
+#detailModal .detail-author-section {
+    text-align: right;
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+}
+
+#detailModal .detail-author-section .detail-info-value {
+    font-size: 1rem;
+}
+
+/* 섹션 제목 */
+#detailModal .detail-section-title {
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* 내용 섹션 */
+#detailModal .detail-content-section {
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+}
+
+#detailModal .detail-content-text {
+    color: #555;
+    line-height: 1.8;
+    font-size: 0.95rem;
+}
+
+/* 파일 섹션 */
+#detailModal .detail-file-section {
+    padding: 0;
+}
+
+#detailModal #fileDetailVOList {
+    font-size: 0.9rem;
+    color: #555;
+}
+
+/* ===== 네비게이션 섹션 (통합) ===== */
+#detailModal .detail-modal-nav {
+    padding: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    background: white;
+}
+
+#detailModal .detail-nav-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 0.9rem;
+    overflow: hidden;
+}
+
+#detailModal .detail-nav-item {
+    cursor: pointer;
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    transition: opacity 0.2s ease;
+    border-bottom: 1px solid #ddd;
+}
+
+#detailModal .detail-nav-item:last-child {
+    border-bottom: none;
+}
+
+#detailModal .detail-nav-item:hover {
+    opacity: 0.9;
+}
+
+#detailModal .detail-nav-item:hover .detail-nav-label {
+    background: #5DADE2;
+}
+
+#detailModal .detail-nav-item:hover .detail-nav-title {
+    background: #fafafa;
+}
+
+#detailModal .detail-nav-label {
+    background: #6b8aa7;
+    color: #333;
+    padding: 0.8rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    transition: background-color 0.2s ease;
+}
+
+#detailModal .detail-nav-title {
+    background: #ffffff;
+    color: #333;
+    padding: 0.8rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    word-break: break-word;
+}
+
+/* 푸터 */
+#detailModal .detail-modal-footer {
+    padding: 0.9rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    text-align: right;
+    background: #f9f9f9;
+}
+
+#detailModal .detail-close-btn {
+    padding: 0.35rem 0.7rem;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+#detailModal .detail-close-btn:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    text-decoration: none;
+}
+
+#detailModal .detail-close-btn:active {
+    background-color: #dee2e6;
+    border-color: #9ca3af;
+}
+
+/* ===== 반응형 ===== */
+@media (max-width: 768px) {
+    #detailModal .detail-modal-body {
+        padding: 1rem;
+    }
+
+    #detailModal .detail-info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 0.8rem;
+    }
+
+    #detailModal .detail-info-item.detail-info-right {
+        align-self: flex-start;
+        text-align: left;
+        margin-top: 0.5rem;
+    }
+
+    #detailModal .detail-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        gap: 0.3rem;
+    }
+
+    #detailModal .detail-author-section {
+        margin-left: 0;
+        align-self: flex-start;
+    }
+
+    #detailModal .detail-nav-content {
+        margin: 0.7rem;
+    }
+
+    #detailModal .detail-nav-label {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+        min-width: 70px;
+    }
+
+    #detailModal .detail-nav-title {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    #detailModal .detail-modal-footer {
+        padding: 0.8rem;
+    }
+
+    #detailModal .detail-close-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    #detailModal .detail-modal-header {
+        padding: 0.7rem;
+    }
+
+    #detailModal .detail-modal-title {
+        font-size: 1rem;
+    }
+
+    #detailModal .detail-modal-body {
+        padding: 0.8rem;
+    }
+
+    #detailModal .detail-info-label {
+        font-size: 0.8rem;
+    }
+
+    #detailModal .detail-info-value {
+        font-size: 0.9rem;
+    }
+
+    #detailModal .detail-title-value {
+        font-size: 0.95rem;
+    }
+
+    #detailModal .detail-section-title {
+        font-size: 0.85rem;
+    }
+
+    #detailModal .detail-content-text {
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }
+
+    #detailModal .detail-nav-content {
+        margin: 0.6rem;
+    }
+
+    #detailModal .detail-nav-label {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 60px;
+    }
+
+    #detailModal .detail-nav-title {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    #detailModal .detail-close-btn {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.85rem;
+    }
+}

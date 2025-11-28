@@ -1,0 +1,32 @@
+package kr.or.ddit.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.MberVO;
+
+@Mapper
+public interface MberMapper {
+
+	// 회원정보 조회
+	MberVO selectMemberById(String mberId);
+
+	// 회원 가입시 회워정보insert
+	void insertMember(MberVO mberVO);
+
+	// 회원가입 시 기본 권한 insert (ROLE_GUEST)
+	void insertMemberAuthor(MberVO mberVO);
+
+	void insertHouseholdMember(MberVO mberVO);
+
+	// UserDetailServiceImpl
+	MberVO findByMberId(String mberId);
+
+	Integer countHousehold(int aptcmpl, int ho, int residesttus);
+
+	Integer countRegistered(int aptcmpl, int ho, int residesttus);
+
+	String selectHouseholdIdByMember(String mberId);
+
+
+
+}

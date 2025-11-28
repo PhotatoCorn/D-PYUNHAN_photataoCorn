@@ -1,0 +1,44 @@
+package kr.or.ddit.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.mapper.VoteManageTrgterMapper;
+import kr.or.ddit.service.VoteManageTrgterService;
+import kr.or.ddit.vo.VoteManageTrgterVO;
+import kr.or.ddit.vo.VoteMtrVO;
+@Service
+public class VoteManageTrgterServiceImpl implements VoteManageTrgterService{
+	
+	@Autowired
+	VoteManageTrgterMapper voteManageTrgterMapper;
+	
+	//투표리스트
+	@Override
+	public List<VoteMtrVO> memVoteList(VoteMtrVO voteMtrVO) {
+		// TODO Auto-generated method stub
+		return this.voteManageTrgterMapper.memVoteList(voteMtrVO);
+	
+	}
+    //투표할라고고르는페이지의 상세보기
+	@Override
+	public VoteMtrVO voteMtrList(VoteMtrVO voteMtrVO) {
+		return this.voteManageTrgterMapper.voteMtrList(voteMtrVO);
+	}
+	
+	//투표하기
+	@Override
+	public int haveAVote(VoteManageTrgterVO voteManageTrgterVO) {
+		// TODO Auto-generated method stub
+		return this.voteManageTrgterMapper.haveAVote(voteManageTrgterVO);
+	}
+	@Override
+	public VoteMtrVO goVotedResult(VoteMtrVO voteMtrVO) {
+		// TODO Auto-generated method stub
+		return this.voteManageTrgterMapper.goVotedResult(voteMtrVO);
+	}
+	
+	
+}

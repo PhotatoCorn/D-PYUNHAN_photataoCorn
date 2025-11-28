@@ -1,0 +1,12 @@
+package kr.or.ddit.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.MberVO;
+
+@Mapper
+public interface MberMapper {
+
+	MberVO findByMberId(String mberId);
+
+}

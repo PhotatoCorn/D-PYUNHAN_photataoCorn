@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.MberMapper">
+
+	<resultMap type="kr.or.ddit.vo.MberVO" id="mberMap">
+		<result property="enabled" column="ENABLED" />
+		<result property="mberId" column="MBER_ID" />
+		<result property="password" column="PASSWORD" />
+		<result property="mberNm" column="MBER_NM" />
+		<result property="telno" column="TELNO" />
+		<result property="email" column="EMAIL" />
+		<result property="mberTy" column="MBER_TY" />
+		<result property="brthdy" column="BRTHDY" />
+		<collection property="authorVOList" resultMap="AthorMap"></collection>
+	</resultMap>
+
+	<resultMap type="kr.or.ddit.vo.AuthorVO" id="AthorMap">
+		<result property="mberId" column="MBER_ID" />
+		<result property="authorId" column="AUTHOR_ID" />
+	</resultMap>
+
+	<!-- 사용자 정보를 가져옴(로그인)-select -->
+	<select id="findByMberId" parameterType="String"
+		resultMap="mberMap">
+		SELECT
+		a.mber_id,
+		a.password,
+		a.mber_nm,
+		a.telno,
+		a.email,
+		a.mber_ty,
+		a.brthdy,
+		a.enabled,
+		b.author_id
+		FROM
+		mber a
+		LEFT OUTER JOIN author b on(a.mber_id = b.mber_id)
+		WHERE
+		a.mber_id=#{mberId}
+	</select>
+
+	<!-- 세대 존재 여부 체크 -->
+	<select id="countHousehold" resultType="int">
+		SELECT COUNT(*)
+		FROM HSHLD
+		WHERE APTCMPL = #{aptcmpl}
+		AND HO = #{ho}
+		AND RESIDESTTUS = #{residesttus}
+	</select>
+
+	<!-- 이미 등록된 회원인지 체크 -->
+	<select id="countRegistered" resultType="int">
+		SELECT COUNT(*)
+		FROM MBER m
+		JOIN HSHLD_MBER_MANAGE hu ON m.MBER_ID = hu.MBER_ID
+		JOIN HSHLD h ON hu.HSHLD_ID = h.HSHLD_ID
+		WHERE h.APTCMPL = #{aptcmpl} AND h.HO = #{ho} AND h.RESIDESTTUS =
+		#{residesttus}
+	</select>
+
+
+	<!-- 회원가입 시 MBER 테이블에 insert -->
+	<insert id="insertMember" parameterType="kr.or.ddit.vo.MberVO">
+		INSERT INTO MBER (MBER_ID, PASSWORD, MBER_NM, TELNO, EMAIL, MBER_TY, BRTHDY,
+		ENABLED)
+		VALUES (#{mberId}, #{password}, #{mberNm}, #{telno}, #{email}, #{mberTy},
+		#{brthdy}, #{enabled})
+	</insert>
+
+	<!-- 회원가입 시 AUTHOR에 ROLE_GUEST insert -->
+	<insert id="insertMemberAuthor"
+		parameterType="kr.or.ddit.vo.MberVO">
+		INSERT INTO AUTHOR (MBER_ID, AUTHOR_ID)
+		VALUES (#{mberId}, 'GUEST')
+	</insert>
+
+	<!-- HSHLD_MBER_MANAGE에 세대와 회원 연결 -->
+	<insert id="insertHouseholdMember"
+		parameterType="kr.or.ddit.vo.MberVO">
+		INSERT INTO HSHLD_MBER_MANAGE (HSHLD_ID, MBER_ID)
+		VALUES (
+		(SELECT HSHLD_ID FROM HSHLD WHERE APTCMPL = #{aptcmpl} AND HO = #{ho} AND
+		RESIDESTTUS = #{residesttus}),
+		#{mberId}
+		)
+	</insert>
+
+	<!-- 같은 동호수 체크 -->
+	<select id="countHouseholdMember" resultType="int">
+		SELECT COUNT(*)
+		FROM HSHLD_MBER_MANAGE hm
+		JOIN HSHLD h ON hm.HSHLD_ID = h.HSHLD_ID
+		WHERE h.APTCMPL = #{aptcmpl} AND h.HO = #{ho}
+	</select>
+
+	<!-- 차량 등록 -->
+	<insert id="insertVehicleRegist"
+		parameterType="kr.or.ddit.vo.MberVO">
+		INSERT INTO REGIST (REGIST_ID, VHCLE_NO, HSHLD_ID)
+		VALUES (
+		(SELECT NVL(MAX(REGIST_ID),0)+1 FROM REGIST),
+		#{vhcleNo},
+		(SELECT HSHLD_ID FROM HSHLD
+		WHERE APTCMPL = #{aptcmpl} AND HO = #{ho} AND RESIDESTTUS = #{residesttus})
+		)
+	</insert>
+</mapper>

@@ -1,0 +1,104 @@
+package kr.or.ddit.controller;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.service.VisitVhicleService;
+import kr.or.ddit.vo.VisitVhcleVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/visit")
+public class VisitVhcleController {
+
+    @Autowired
+    private VisitVhicleService visitVhicleService;
+
+    // 1. 예약 폼 페이지
+    @GetMapping("/reserve")
+    public String reserveForm(HttpSession session, Model model) {
+        String hshldId = getLoginHshldId(session);
+
+        int accmltTime = visitVhicleService.getAccmltTime(hshldId);
+        int rmnTime = 120 - accmltTime;
+        List<VisitVhcleVO> history = visitVhicleService.getVisitHistory(hshldId);
+
+        model.addAttribute("remainingTime", rmnTime);
+        model.addAttribute("accmltTime", accmltTime);
+        model.addAttribute("history", history);
+
+        return "visit/reserveForm";
+    }
+
+    // 2. 예약 처리 (AJAX)
+    @PostMapping("/reserve")
+    @ResponseBody
+    public Map<String, Object> reserveAjax(
+            HttpSession session,
+            @RequestParam String vhcleNo,
+            @RequestParam @DateTimeFormat(pattern="yyyy-MM-dd'T'HH:mm") LocalDateTime startDt,
+            @RequestParam @DateTimeFormat(pattern="yyyy-MM-dd'T'HH:mm") LocalDateTime endDt) {
+
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String hshldId = getLoginHshldId(session);
+
+            VisitVhcleVO visitVhcleVO = new VisitVhcleVO();
+            visitVhcleVO.setHshldId(hshldId);
+            visitVhcleVO.setVhcleNo(vhcleNo);
+            visitVhcleVO.setParkngBeginDt(java.sql.Timestamp.valueOf(startDt));
+            visitVhcleVO.setParkngEndDt(java.sql.Timestamp.valueOf(endDt));
+
+            int insertResult = visitVhicleService.reserveVhicle(visitVhcleVO);
+
+            if (insertResult > 0) {
+                result.put("success", true);
+                int rmnTime = visitVhicleService.getRemainingTime(hshldId);
+                VisitVhcleVO latest = visitVhicleService.getLatestVisit(hshldId);
+
+                result.put("remainingTime", rmnTime);
+                result.put("accmltTime", latest != null ? latest.getAccmltTime() : 0);
+                result.put("now", LocalDateTime.now().toString());
+            } else {
+                result.put("success", false);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return result;
+    }
+
+    // 3. 이용내역 조회
+    @GetMapping("/history")  
+    public String visitHistory(HttpSession session, Model model) {
+        String hshldId = getLoginHshldId(session);
+        List<VisitVhcleVO> history = visitVhicleService.getVisitHistory(hshldId);
+        model.addAttribute("history", history);
+        return "visit/history";
+    }
+
+    // 로그인한 세대번호 가져오기
+    private String getLoginHshldId(HttpSession session) {
+        String mberId = (String) session.getAttribute("mberId");
+        if (mberId == null) {
+            throw new RuntimeException("로그인이 필요합니다.");
+        }
+        return visitVhicleService.getHshldIdByMberId(mberId);
+    }
+}

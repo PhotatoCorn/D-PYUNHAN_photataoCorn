@@ -1,0 +1,23 @@
+package kr.or.ddit.vo;
+
+import java.util.List;
+
+import lombok.Data;
+
+@Data
+public class MberVO {
+	private String mberId;
+	private String password;
+	private String mberNm;
+	private String telno;
+	private String email;
+	private int mberTy;
+	private String brthdy;
+	private String enabled;
+	
+	//첨부 프사
+	private long fileGroupSn;
+	
+	//AUTHOR 테이블
+	List<AuthorVO> authorVOList;
+}

@@ -1,0 +1,83 @@
+package kr.or.ddit.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import kr.or.ddit.service.MberService;
+import kr.or.ddit.vo.MberVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class MberViewController {
+
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Autowired
+    private MberService mberService;
+
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login"; // login.jsp
+    }
+    
+
+
+    // 회원가입 페이지
+    @GetMapping("/signup")
+    public String signup() {
+        return "signup"; // jsp
+    }
+
+    // 회원가입 처리
+    @PostMapping("/user")
+    public String signup(MberVO mberVO, HttpServletRequest request) {
+        log.info("check: signup/MberVO => {}", mberVO);
+
+        // 1. 세대 존재 여부 체크
+        boolean householdExists = mberService.checkHousehold(mberVO.getAptcmpl(), mberVO.getHo(), mberVO.getResidesttus());
+        if (!householdExists) {
+            request.setAttribute("errorMsg", "입력한 동/호수에 해당하는 세대가 존재하지 않습니다.");
+            return "signup";
+        }
+
+        // 2. 이미 등록된 회원인지 체크
+        boolean alreadyRegistered = mberService.checkAlreadyRegistered(mberVO.getAptcmpl(), mberVO.getHo(), mberVO.getResidesttus());
+        if (alreadyRegistered) {
+            request.setAttribute("errorMsg", "세대 확인 후 다시 입력하세요.");
+            return "signup";
+        }
+
+        // 3. 비밀번호 암호화
+        String encodedPassword = bCryptPasswordEncoder.encode(mberVO.getPassword());
+        mberVO.setPassword(encodedPassword);
+        log.info("check: encodedPassword => {}", encodedPassword);
+
+        // 4. 승인 대기 상태 등록
+        mberVO.setEnabled("0"); // 승인 대기
+
+        // 5. 회원 정보 저장
+        mberService.insertMember(mberVO);
+
+        // 6. 기본 권한 ROLE_GUEST 부여
+        mberService.insertMemberAuthor(mberVO);
+
+        // 7. HSHLD_MBER_MANAGE 테이블에 세대 연결
+        mberService.insertHouseholdMember(mberVO);
+        
+        log.info("회원가입 완료: {}, ROLE_GUEST로 등록됨", mberVO.getMberId());
+
+        return "login"; // 로그인 페이지로 이동
+    }
+
+    @GetMapping("/main")
+    public String main() {
+        return "main";  // /WEB-INF/views/main.jsp
+    }
+}

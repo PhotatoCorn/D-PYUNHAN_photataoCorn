@@ -1,0 +1,111 @@
+/* 전체 탭 컨테이너 여백 조정 */
+#resveTabs {
+    gap: 10px;
+}
+
+/* 타원형 버튼 스타일 */
+#resveTabs .nav-link {
+    border-radius: 50px;
+    /* 완전한 타원 */
+    padding: 8px 20px;
+    background-color: #f1f1f1;
+    color: #333;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+/* 호버 효과 */
+#resve1 .col-md-4:hover .js-resve-card, #resve .col-12:hover .js-resve-card
+    {
+    transform: scale(1.03);
+    transition: 0.3s ease;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    border-color: #66bb6a;
+}
+
+/* 활성 탭 (active 상태) */
+#resveTabs .nav-link.active {
+    background-color: #4caf50;
+    color: white;
+    border-color: #388e3c;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* CSS로 사진 넣기 */
+#resve1 .col-md-4:nth-of-type(1) .js-resve-card {
+    background: url('/images/socialSpace/bookCafe.png') center/cover no-repeat;
+}
+
+#resve1 .col-md-4:nth-of-type(2) .js-resve-card {
+    background: url('/images/socialSpace/swim.jpg') center/cover no-repeat;
+}
+
+#resve1 .col-md-4:nth-of-type(3) .js-resve-card {
+	background: url('/images/socialSpace/billiards.jpg') center/cover no-repeat;
+}
+
+#resve1 .col-md-4:nth-of-type(4) .js-resve-card {
+	background: url('/images/socialSpace/tennis.jpg') center/cover no-repeat;
+}
+
+#resve1 .row.gy-4>div:nth-child(5) .js-resve-card {
+	background: url('/images/socialSpace/seminar.jpg') center/cover no-repeat;
+}
+
+#resve1 .row.gy-4>div:nth-child(6) .js-resve-card {
+	background: url('/images/socialSpace/gym.png') center/cover no-repeat;
+}
+
+#resve1 .row.gy-4>div:nth-child(7) .js-resve-card {
+    background: url('/images/socialSpace/spa.png') center/cover no-repeat;
+}
+
+#resve1 .row.gy-4>div:nth-child(8) .js-resve-card {
+    background: url('/images/socialSpace/golf.jpeg') center/cover no-repeat;
+}
+
+#resve1 .row.gy-4>div:nth-child(9) .js-resve-card {
+    background: url('/images/socialSpace/tableTenis.jpeg') center/cover no-repeat;
+}
+
+#resve1 .js-resve-card {
+    border-radius: 14px;
+    overflow: hidden;
+    color: #fff;
+    position: relative;
+    display: block;
+    min-height: 180px;
+}
+
+#resve1 .js-resve-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+#resve1 .js-resve-card>div {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+    padding: 0 10px;
+    /* CSS로 사진 넣기 끝 */
+}
+
+#resve1 .js-resve-card .title {
+    margin-bottom: 4px; /* 제목 아래 간격 최소화 */
+}
+
+#resve1 .js-resve-card .description {
+    margin-top: 0;
+    line-height: 1.35;  /* 읽기 좋은 최소 라인 간격 */
+}
+
+#resve1 .js-resve-card h4,
+#resve1 .js-resve-card p {
+    margin: 0;   /* h4/p 기본 margin 제거 */
+}
