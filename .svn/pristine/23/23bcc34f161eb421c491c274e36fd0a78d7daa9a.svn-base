@@ -1,0 +1,57 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<%@ include file="../include/header.jsp" %>
+<script type="text/javascript" src="/js/jquery-3.6.0.js"></script>
+
+<h2>🗓️ 월별 관리비 사용 내역 조회</h2>
+
+<form action="/managect/managectView" method="get">
+    <label for="searchMonth">조회 월:</label>
+    <input type="month" id="searchMonth" name="searchMonth" value="${searchMonth}" required />
+    <button type="submit">조회</button>
+</form>
+<button type="button" onclick="upload()">관리비 업로드</button>
+<button type="button" onclick="mtinsp()">검침량 조회</button>
+<hr/>
+
+<c:if test="${not empty feeList}">
+    <h3>📄 '${searchMonth}' 관리비 사용 내역 (${feeList.size()} 건)</h3>
+    <table border="1" style="width: 80%; border-collapse: collapse;">
+        <thead>
+        <tr>
+            <th>항목 ID</th>
+            <th>항목명</th>
+            <th>금액</th>
+            <th>기준 코드</th>
+            <th>사용 년월</th>
+        </tr>
+        </thead>
+        <tbody>
+        <c:forEach var="item" items="${feeList}">
+            <tr>
+                <td>${item.managectIemId}</td>
+                <td>${item.iemNm}</td>
+                <td><fmt:formatNumber value="${item.managectAmount}" pattern="#,##0" /> 원</td>
+                <td>${item.managectIemStdrCode}</td>
+                <td>${item.managectUseDe}</td>
+            </tr>
+        </c:forEach>
+        </tbody>
+    </table>
+</c:if>
+
+<c:if test="${empty feeList && not empty searchMonth}">
+    <p>'${searchMonth}'에 해당하는 데이터가 없습니다.</p>
+</c:if>
+<script language="JavaScript">
+    function upload() {
+        window.location.href = '/managect/upload';
+    }
+    function mtinsp() {
+        window.location.href = '/mtinsp/mtinspView';
+    }
+</script>
+
+<%@ include file="../include/footer.jsp" %>

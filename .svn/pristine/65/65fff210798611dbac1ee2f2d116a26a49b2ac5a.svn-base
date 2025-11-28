@@ -1,0 +1,179 @@
+package kr.or.ddit.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.service.ElctrncsanctnService;
+import kr.or.ddit.service.impl.CustomUser;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.DeptVO;
+import kr.or.ddit.vo.DrftDocVO;
+import kr.or.ddit.vo.DrftRefrnVO;
+import kr.or.ddit.vo.ElctrnsanctnManageVO;
+import kr.or.ddit.vo.ElctrnsanctnVO;
+import kr.or.ddit.vo.EmpVO;
+import kr.or.ddit.vo.SanctnlnVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/elctrnsanctn")
+@Controller
+public class ElctrncsanctnController {
+	
+	@Autowired
+	ElctrncsanctnService elctrnsanctnService;
+	
+	@GetMapping("/getElctrnsanctnList")
+	public String viewElctrnsanctn(
+			Model model,
+			@RequestParam(required = false, defaultValue = "") String keyword,
+			@RequestParam(required = false, defaultValue = "1") int currentPage 
+			) {	
+		
+		int size = 10;
+		
+		Map<String, Object> map = new HashMap<>();
+		map.put("currentPage", currentPage);
+		map.put("keyword", keyword);
+		
+		int total = this.elctrnsanctnService.getTotal(map);
+		
+		List<ElctrnsanctnVO> elctrnsanctnVOList = this.elctrnsanctnService.getElctrnsanctnVOList(map);
+		
+		for(ElctrnsanctnVO vo : elctrnsanctnVOList) {
+		    List<SanctnlnVO> sanctnlnList = this.elctrnsanctnService.getSanctnlnList(vo.getElctrnsanctnSn());
+		    vo.setSanctnlnVOList(sanctnlnList);
+		}
+		
+		ArticlePage<ElctrnsanctnVO> articlePage = new ArticlePage<ElctrnsanctnVO>(total, currentPage, size, elctrnsanctnVOList, keyword);
+		
+		model.addAttribute("articlePage", articlePage);
+		
+		return "elctrnsanctn/getElctrnsanctnList";
+	}
+	
+	
+	
+	@GetMapping("/postElctrnsanctn")
+	public String insertElctrnsanctn(
+			Model model,
+			@AuthenticationPrincipal CustomUser customUser
+			) {
+		
+		List<ElctrnsanctnManageVO> ElctrnsanctnManageVOList = this.elctrnsanctnService.getElctrnsanctnManageVOList(); 
+		EmpVO empVO = customUser.getEmpVO();
+		List<DeptVO> deptVOList = this.elctrnsanctnService.getDeptVOList(empVO);
+		
+		model.addAttribute("empVO", empVO);
+		model.addAttribute("deptVOList",deptVOList);
+		model.addAttribute("ElctrnsanctnManageVOList", ElctrnsanctnManageVOList);
+		
+		return "elctrnsanctn/postElctrnsanctn";
+	}
+	
+	
+	@ResponseBody
+	@PostMapping("/getDrftDocVOList")
+	public Map<String, Object> getDrftDocVOList(
+			@RequestBody ElctrnsanctnManageVO elctrnsanctnManageVO
+			){
+		
+		List<DrftDocVO> drftDocVOList = this.elctrnsanctnService.getDrftDocVOList(elctrnsanctnManageVO);
+		
+		Map<String, Object> map = new HashMap<>();
+		map.put("drftDocVOList", drftDocVOList);
+		return map;
+	}
+	
+	
+	@ResponseBody
+	@PostMapping("/getDrftDocFormat")
+	public Map<String, Object> getDrftDocFormat(
+			@RequestBody DrftDocVO drftDocVO
+			){
+		log.info("check : getDrftDocFormat/drftDocVO => {}", drftDocVO);
+		drftDocVO = this.elctrnsanctnService.getDrftDocFormat(drftDocVO);
+		
+		Map<String, Object> map = new HashMap<>();
+		map.put("drftDocVO", drftDocVO);
+		return map;
+	}
+	
+	@PostMapping("/postDrftTmprStre")
+	public String putDrftTmprStre(
+			EmpVO empVO,
+			ElctrnsanctnVO elctrnsanctnVO,
+			DrftDocVO drftDocVO,
+			@RequestParam String sanctnlnList,
+			@RequestParam String referenceList
+			) {
+		log.info("check : elctrnsanctnVO => {}", elctrnsanctnVO);
+		int result = this.elctrnsanctnService.postElctrnsanctn(elctrnsanctnVO, sanctnlnList, referenceList);
+				
+		return "redirect:/elctrnsanctn/viewElctrnsanctnList";
+	}
+	
+	@GetMapping("/getElctrnsanctn")
+	public String getElctrnsanctn(
+			ElctrnsanctnVO elctrnsanctnVO,
+			Model model
+			) {
+		log.info("check : elctrnsanctnVO => {}", elctrnsanctnVO);
+				
+		//3. 기안 상세 내용 
+		elctrnsanctnVO = this.elctrnsanctnService.getElctrnsanctn(elctrnsanctnVO);		
+		DrftDocVO drftDocVO = this.elctrnsanctnService.getDrftDocVO(elctrnsanctnVO);
+		
+		EmpVO empVO = this.elctrnsanctnService.getEmpVO(elctrnsanctnVO.getEmpId());
+		List<DeptVO> deptVOList = this.elctrnsanctnService.getDeptVOList(empVO);
+		
+		model.addAttribute("empVO", empVO);
+		model.addAttribute("drftDocVO", drftDocVO);
+		model.addAttribute("elctrnsanctnVO", elctrnsanctnVO);
+		model.addAttribute("deptVOList", deptVOList);
+		return "elctrnsanctn/getElctrnsanctn";
+	}
+	
+	@ResponseBody
+	@PostMapping("/getSanctnln")
+	public Map<String, Object> sanctnlnDetail(
+			@RequestBody ElctrnsanctnVO elctrnsanctnVO
+			){
+		
+		Map<String, Object> map = new HashMap<>();
+		elctrnsanctnVO = this.elctrnsanctnService.getElctrnsanctn(elctrnsanctnVO);
+		List<SanctnlnVO> sanctnlnVOList = this.elctrnsanctnService.getSanctnlnList(elctrnsanctnVO.getElctrnsanctnSn());
+		List<DrftRefrnVO> drftRefrnVOList = this.elctrnsanctnService.getdrftRefrnList(elctrnsanctnVO.getElctrnsanctnSn());
+		
+		map.put("sanctnlnVOList", sanctnlnVOList);
+		map.put("drftRefrnVOList", drftRefrnVOList);
+		return map;
+	}
+	
+	@PostMapping("/postElctrnsanctnFromTmpr")
+	public String postElctrnsanctn(
+			EmpVO empVO,
+			ElctrnsanctnVO elctrnsanctnVO,
+			DrftDocVO drftDocVO,
+			@RequestParam String sanctnlnList,
+			@RequestParam String referenceList
+			) {
+		log.info("check : elctrnsanctnVO => {}", elctrnsanctnVO);
+		int result = this.elctrnsanctnService.updateElctrnsanctn(elctrnsanctnVO, sanctnlnList, referenceList);
+				
+		return "redirect:/elctrnsanctn/getElctrnsanctnList";
+	}
+	
+}

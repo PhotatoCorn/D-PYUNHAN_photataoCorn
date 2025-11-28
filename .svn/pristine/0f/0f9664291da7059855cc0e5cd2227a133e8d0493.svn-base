@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="commonMapper">
+	
+	<sql id="pageHeader">
+	SELECT ROW_TBL.*
+        FROM (
+        SELECT  ROWNUM AS RNUM
+                , TBL.*
+            FROM (
+	</sql>
+	
+	<sql id="pageFooter">
+		) TBL
+            ) ROW_TBL
+        WHERE ROW_TBL.RNUM BETWEEN (#{currentPAge}*10)-(10-1) and (#{currentPAge}*10)
+	</sql>
+	
+</mapper>

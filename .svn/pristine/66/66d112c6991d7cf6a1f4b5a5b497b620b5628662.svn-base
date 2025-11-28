@@ -1,0 +1,64 @@
+package kr.or.ddit.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.mapper.CmmntyMapper;
+import kr.or.ddit.service.CmmntyService;
+import kr.or.ddit.vo.CmmtyVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class CmmntyServiceImpl implements CmmntyService {
+
+	@Autowired
+	CmmntyMapper cmmntymapper;
+	
+	//커뮤니티 리스트 목록 조회
+	@Override
+	public List<CmmtyVO> cmmntylist(Map<String, Object> map) {		
+		return this.cmmntymapper.cmmntylist(map);		
+	}
+
+   //전체 행의 수 
+	@Override
+	public int getTotal2(Map<String, Object> map) {
+		return this.cmmntymapper.getTotal2(map);
+	}
+
+	//모달 상태값 변경 db전달
+	@Override
+	public int cmmntyupdatePost(CmmtyVO cmmtyVO) {
+		
+		int result = this.cmmntymapper.cmmntyupdatePost(cmmtyVO);
+		log.info("============테스트==========");
+		log.info("result(커뮤니티) : {}",result);
+		log.info("cmmtyVO(업데이트 확인) : {}",cmmtyVO);
+		
+		int manageCount = cmmntymapper.selectManageCount(cmmtyVO.getCmmntySn());
+		
+		if(manageCount>=2) {
+			log.info("제발!!!");
+			result += this.cmmntymapper.updateManage(cmmtyVO);
+			log.info("제발!!!+");
+			result += this.cmmntymapper.updateManageRecent(cmmtyVO);
+		}else {
+			result += cmmntymapper.updateManage2(cmmtyVO); //행 1개 이하 일때
+		};
+		
+		log.info("manageCount(갯수확인) : {}",manageCount);
+		
+		return result;
+	}
+
+	//상태 값 변경 전 db값 조회
+	@Override
+	public CmmtyVO detail(int cmmntySn) {
+		return this.cmmntymapper.detail(cmmntySn);
+	}
+
+}

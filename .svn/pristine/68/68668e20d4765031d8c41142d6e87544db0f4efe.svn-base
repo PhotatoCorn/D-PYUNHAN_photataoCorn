@@ -1,0 +1,146 @@
+package kr.or.ddit.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import kr.or.ddit.service.CvplRceptService;
+import kr.or.ddit.service.ElctrncsanctnService;
+import kr.or.ddit.service.FxService;
+import kr.or.ddit.service.VoteMtrService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.ElctrnsanctnVO;
+import kr.or.ddit.vo.SanctnlnVO;
+import kr.or.ddit.vo.VoteMtrVO;
+import lombok.extern.slf4j.Slf4j;
+@Controller
+@Slf4j
+
+public class MainPageController {
+/*=================================================================================================*/
+									/* 투표 정보 불러오기 */
+	//D.I
+	@Autowired
+	ElctrncsanctnService elctrnsanctnService;	// 결재
+    @Autowired	//민원
+    CvplRceptService cvplRceptService;
+	@Autowired	//투표
+	VoteMtrService voteMtrService;  
+    @Autowired	//일정관리
+	FxService fxService;
+    @GetMapping("/main/mainPage")
+    public String mainPage(Model model,
+			@RequestParam(value = "currentPage", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+			@RequestParam(value = "periodFrom",  required = false) String periodFrom,
+	        @RequestParam(value = "periodTo",    required = false) String periodTo,
+	        @RequestParam(value = "stat",        required = false) String stat,
+	        @RequestParam(value="start",required=false) String start, /* start, end는 캘린더 */
+			@RequestParam(value="end",required=false) String end
+			) {
+		// 한 화면에 보여질 행의 수
+		int size = 10;
+		// 전체 행의 수*
+		// 시작,끝 시간이 뒤집히면 역전시키기					//문자열 사전순으로 비교메서드(compareTo)
+		if (periodFrom != null && periodTo != null && periodFrom.compareTo(periodTo) > 0) {
+			String tmp = periodFrom;
+			periodFrom = periodTo;
+			periodTo = tmp;
+		}
+		// 투표리스트 목록
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("currentPage", currentPage);
+		map.put("keyword", keyword);
+		map.put("periodFrom", periodFrom);
+	    map.put("periodTo", periodTo);
+	    map.put("stat", stat);
+		// total에 넣자
+	    int total = this.voteMtrService.getTotal(map);
+	    log.info("voteList->total : " + total);
+		
+		//detail에서 voteMtrList를 써서 voteMtr2VO로 했음 //목록조회 (여기에 다담겨옴)
+		List<VoteMtrVO> voteMtrVOList2 = this.voteMtrService.voteList(map);
+		log.info("voteList->voteMtrVOList2 : " + voteMtrVOList2);
+
+		
+		
+		// 결재 목록
+		List<ElctrnsanctnVO> elctrnsanctnVOList = this.elctrnsanctnService.getElctrnsanctnVOList(map);
+		ArticlePage<ElctrnsanctnVO> articlePage2 = new ArticlePage<ElctrnsanctnVO>(total, currentPage, size, elctrnsanctnVOList, keyword);
+		for(ElctrnsanctnVO vo : elctrnsanctnVOList) {
+		    List<SanctnlnVO> sanctnlnList = this.elctrnsanctnService.getSanctnlnList(vo.getElctrnsanctnSn());
+		    vo.setSanctnlnVOList(sanctnlnList);
+		}
+		model.addAttribute("articlePage2", articlePage2);
+		log.info("list->articlePage2 : {}" + articlePage2);
+		// 결재 목록
+
+		
+		// 투표
+		// 페이지네이션
+		ArticlePage<VoteMtrVO> articlePage1 = new ArticlePage<VoteMtrVO>(total, currentPage, size, voteMtrVOList2, keyword);
+
+		model.addAttribute("voteMtrVOList2", voteMtrVOList2);
+		model.addAttribute("articlePage1", articlePage1);
+		model.addAttribute("keyword", keyword);
+	    model.addAttribute("periodFrom", periodFrom);
+	    model.addAttribute("periodTo", periodTo);
+	    model.addAttribute("stat", stat);
+		log.info("list->voteMtrVOList2 : {}" + voteMtrVOList2);
+		log.info("list->articlePage1 : {}" + articlePage1);
+		// 투표
+									/* 투표 정보,캘린더 불러오기 끝*/
+		
+		
+		return "main/mainPage";
+    }
+/*=================================================================================================*/
+    
+    @GetMapping("/include/header")
+	public String viewElctrnsanctn(
+			Model model,
+			@RequestParam(required = false, defaultValue = "") String keyword,
+			@RequestParam(required = false, defaultValue = "1") int currentPage 
+			) {	
+		
+		int size = 10;
+		
+		Map<String, Object> map = new HashMap<>();
+		map.put("currentPage", currentPage);
+		map.put("keyword", keyword);
+		
+		int total = this.elctrnsanctnService.getTotal(map);
+		
+		List<ElctrnsanctnVO> elctrnsanctnVOList = this.elctrnsanctnService.getElctrnsanctnVOList(map);
+		
+		for(ElctrnsanctnVO vo : elctrnsanctnVOList) {
+		    List<SanctnlnVO> sanctnlnList = this.elctrnsanctnService.getSanctnlnList(vo.getElctrnsanctnSn());
+		    vo.setSanctnlnVOList(sanctnlnList);
+		}
+		
+		ArticlePage<ElctrnsanctnVO> articlePage = new ArticlePage<ElctrnsanctnVO>(total, currentPage, size, elctrnsanctnVOList, keyword);
+		
+		model.addAttribute("articlePage", articlePage);
+		
+		return "include/header";
+	}
+	
+}
+
+
+
+
+
+// 1. 일정 달력
+// 2. 전자결재
+// 3. 커뮤니티 시설 상태
+// 4. 입주민등록
+// 6. 게시판 생성기
+

@@ -1,0 +1,53 @@
+package kr.or.ddit.vo;
+
+import java.util.Date;
+
+import lombok.Data;
+
+@Data
+public class BdderVO {
+	
+	private int rnum;
+	//입찰자 확인용 비밀번호
+	private String bdderPassword; 
+	
+	// 입찰 보금금액
+	private int bidGtn;
+	private long fileGroupSn;
+	private String bdderCmpnyNm; 
+	
+	// 입찰자 테이블 PK
+	private int bdderSn; 
+	private String bdderNm;
+	private String bdderAdres;
+	private String bdderTelno;
+	private String bdderBizrno; 
+
+	// 입찰자 테이블 PK
+	private String bdderEmail;
+	private Date bidSportDt;
+	
+	//입찰가액
+	private int bidAmount;
+	private int bidPblancSn;
+	
+	//입찰 여부
+	private int bidAt; 
+		public String getBidAtAsStr() {
+			switch (bidAt) {
+			case 2:
+				return "미선정";
+			case 1:
+				return "선정";
+			default:
+				return "진행 중";
+			}
+		}
+//		private String bidCn; 입찰 내용 필요 없음
+	private Date bidSlctnDt;
+	
+	
+	//1:1
+	private BidPblancVO bidPblancVO;
+	
+}

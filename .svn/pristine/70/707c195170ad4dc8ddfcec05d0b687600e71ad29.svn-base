@@ -1,0 +1,45 @@
+package kr.or.ddit.service;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.or.ddit.vo.DeptVO;
+import kr.or.ddit.vo.DrftDocVO;
+import kr.or.ddit.vo.DrftRefrnVO;
+import kr.or.ddit.vo.ElctrnsanctnManageVO;
+import kr.or.ddit.vo.ElctrnsanctnVO;
+import kr.or.ddit.vo.EmpVO;
+import kr.or.ddit.vo.SanctnlnVO;
+
+public interface ElctrncsanctnService {
+
+	List<ElctrnsanctnManageVO> getElctrnsanctnManageVOList();
+
+	DrftDocVO getDrftDocFormat(DrftDocVO drftDocVO);
+
+	List<EmpVO> getEmpVOList(EmpVO empVO);
+
+	List<DrftDocVO> getDrftDocVOList(ElctrnsanctnManageVO elctrnsanctnManageVO);
+
+	List<DeptVO> getDeptVOList(EmpVO empVO);	
+
+	List<ElctrnsanctnVO> getElctrnsanctnVOList(Map<String, Object> map);
+	/*kbh추가 5행출력용*/
+	List<ElctrnsanctnVO> getElctrnsanctnVOListSm(Map<String, Object> map);
+
+	int getTotal(Map<String, Object> map);
+
+	List<SanctnlnVO> getSanctnlnList(int elctrnsanctnSn);
+
+	ElctrnsanctnVO getElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO);
+
+	EmpVO getEmpVO(String empId);
+
+	DrftDocVO getDrftDocVO(ElctrnsanctnVO elctrnsanctnVO);
+
+	List<DrftRefrnVO> getdrftRefrnList(int elctrnsanctnSn);
+
+	int postElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO, String sanctnlnList, String referenceList);
+
+	int updateElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO, String sanctnlnList, String referenceList);
+}

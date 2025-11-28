@@ -1,0 +1,176 @@
+package kr.or.ddit.util;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.config.BeanController;
+import kr.or.ddit.mapper.FileMapper;
+import kr.or.ddit.vo.FileDetailVO;
+import kr.or.ddit.vo.FileGroupVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Controller
+@Slf4j
+public class UploadController {
+
+	//0. 업로드 될 폴더 DI / IOC
+	@Autowired
+	BeanController beanController;
+	
+	// 특별히 매퍼인터페이스로 다이렉트 호출
+	@Autowired
+	FileMapper fileMapper;
+
+	//***[다중 파일 업로드] 	FILE_GROUP(1) 테이블 및 				FILE_DETAIL(N) 테이블 사용
+	//				   	P.K FILE_GROUP_NO(20251002001) : 	F.K FILE_GROUP_NO(20251002001)
+	public long multiImageUpload(MultipartFile[] multipartFiles) {
+		long fileGroupSn = 0L;
+		
+		//시작 ///
+	      String pictureUrl = "";
+	      int seq = 1;
+	      int result = 0;
+	      
+	      if (multipartFiles == null || multipartFiles.length == 0) {
+	          log.warn("업로드된 파일이 없습니다");
+	          return 0L;
+	      }
+	      
+	      //1. FILE_GROUP 테이블에 insert(1회 실행)
+	      FileGroupVO fileGroupVO = new FileGroupVO();
+	      //실행전 fileGroupVO{fileGroupNo=0,fileRegdate=null)
+	      result += this.fileMapper.insertFileGroup(fileGroupVO);
+	      //실행후 fileGroupVO{fileGroupNo=20250226001,fileRegdate=null) 왜냐하면 selectKey에 의해서..
+	      
+	      //selectKey 태그에 의해 fileGropuNo가 채워짐** 중요한 정보!!
+	      fileGroupSn = fileGroupVO.getFileGroupSn();
+	      log.info("check : multiImageUpload/fileGroupNo =>"+fileGroupSn);
+	      
+	      //파일의 개수만큼 반봅
+	      for(MultipartFile multipartFile: multipartFiles) {
+	    	  log.info("이미지 파일 명 : " + multipartFile.getOriginalFilename());
+	    	  log.info("이미지 크기 : " + multipartFile.getSize());
+	    	  //MIME(Multipurpose Internet Mail Extensions) : 문서, 파일 또는 바이트 집합의 성격과 형식. 표준화
+	    	  // .jpg / .jpeg의 MIME 타입 : image/jpeg
+	    	  log.info("MIME 타입 : " + multipartFile.getContentType());
+	    	  //서버측 업로드 대상 폴더("D:\\upload")
+	    	  log.info("uploadFolder : " + this.beanController.getUploadFolder());
+	    	  
+	    	  //연월일 폴더 생성 설계								   파일세퍼레이터
+	    	  //                        		D:\\upload  	  \\ 		 			2025\\05\\21
+	    	  File uploadPath = new File(this.beanController.getUploadFolder(), this.beanController.getFolder());
+	    	  
+	    	  //연월일 폴더 생성 실행
+	    	  if(uploadPath.exists()==false) {
+	    		  uploadPath.mkdirs(); //하위에 여러개의 폴더만들때는 꼭 mkdirs()
+	    	  }
+	    	  
+	    	  //파일명
+	    	  String uploadFileName = multipartFile.getOriginalFilename();
+	    	  
+	    	  //같은 날 같은 이미지 업로드 시 파일 중복 방지 시작----------------
+	    	  //java.util.UUID => 랜덤값 생성
+	    	  UUID uuid = UUID.randomUUID();
+	    	  
+	    	  //								    UUDI    + _ + originalFileName
+	    	  //원래의 파일 이름과 구분하기 위해 _를 붙임(sdafjasdlfksadj_개똥이.jpg)
+	    	  uploadFileName =uuid.toString() + "_"+ uploadFileName;
+	    	  //같은 날 같은 이미지 업로드 시 파일 중복 방지 끝----------------
+	    	  
+	    	  log.info("check : multiImageUpload/uploadFileName =>"+uploadFileName);
+	    	  
+	    	  //설계
+	    	  // , : \\ (파일 세퍼레이터)
+	    	  //uploadFolder : D:\\springboot\\upload\\2025\\05\\21    +  \\ + asdfljk_개똥이.jpg
+	    	  File saveFile = new File(uploadPath, uploadFileName);
+	    	  
+	    	  try {
+	    		  //2.파일 복사 실행(설계대로)
+	    		  //스프링파일객체.transferTo(설계)
+	    		  multipartFile.transferTo(saveFile);
+	    	  } catch (IllegalStateException | IOException e) {
+	    		  e.printStackTrace();
+	    	  }
+	    	  
+	    	  //웹경로
+	    	  //getFolder().replace("\\", "/") : 2025/02/21
+	    	  // /2025/02/21/sdaflkfdsaj_개똥이.jpg
+	    	  pictureUrl = "/"+this.beanController.getFolder().replace("\\", "/")+"/"+uploadFileName;
+	    	  
+	    	  //다운로드용 절대 저장경로 (disk)
+	    	  String diskPath = saveFile.getAbsolutePath(); // D:\\upload\\2025\\10\\30\\uuid_파일명.jpg
+	    	  log.info("check : diskPath => {}", diskPath);
+	    	  
+	    	  //2. FILE_DETAIL 테이블에 insert(첨부파일의 개수만큼 실행)
+	    	  FileDetailVO fileDetailVO = new FileDetailVO();
+	    	  /*
+	          //실행전 fileGroupVO{fileGroupNo=0,fileRegdate=null)
+	         //실행후 fileGroupVO{fileGroupNo=20250226001,fileRegdate=null) 왜냐하면 selectKey에 의해서..
+	         result += this.itemMapper.insertFileGroup(fileGroupVO);
+	    	   */
+	    	  fileDetailVO.setFileNo(seq++);//먼저 1을 넣고 그후에 1증가
+	    	  fileDetailVO.setFileGroupSn(fileGroupVO.getFileGroupSn());
+	    	  fileDetailVO.setFileOrginlNm(multipartFile.getOriginalFilename()); //원본파일명
+	    	  fileDetailVO.setFileStreNm(uploadFileName); // uploadFileName = UUID + "_"+원본파일명
+	    	  fileDetailVO.setFileStrelc(pictureUrl); // /2025/02/21/sdaflkfdsaj_개똥이.jpg
+	    	  fileDetailVO.setFileMg(multipartFile.getSize());
+	    	  fileDetailVO.setFileExtsn(
+	    			  multipartFile.getOriginalFilename().substring(
+	    					  multipartFile.getOriginalFilename().lastIndexOf(".")+1
+	    					  )
+	    			  ); //jpg(확장자)
+	    	  fileDetailVO.setFileMime(multipartFile.getContentType()); //MIME타입
+	    	  fileDetailVO.setFileFancysize(null); //bytes->MB
+	    	  fileDetailVO.setFileSaveDate(null);
+	    	  fileDetailVO.setFileDowncount(0);
+	    	  
+	    	  //다운로드용
+	    	  fileDetailVO.setFileAbsltStrelc(diskPath);
+	    	  
+	    	  //FILE_DETAIL 테이블에 insert
+	    	  result += this.fileMapper.insertFileDetail(fileDetailVO);
+	    	  
+	      }//end for
+	         
+	      //끝 ///
+		
+		//파일 업로드
+		
+		
+		//DB작업
+		
+		
+		return fileGroupSn;
+	}
+	
+	public String uploadFile(MultipartFile multipartFile) throws IOException {
+        if (multipartFile == null || multipartFile.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다");
+        }
+        
+        log.info("파일 업로드 시작: {}", multipartFile.getOriginalFilename());
+        
+        // 연월일 폴더 생성
+        File uploadPath = new File(this.beanController.getUploadFolder(), this.beanController.getFolder());
+        
+        if (!uploadPath.exists()) {
+            uploadPath.mkdirs();
+            log.info("업로드 폴더 생성: {}", uploadPath.getAbsolutePath());
+        }
+        
+        // UUID 생성으로 파일 중복 방지
+        String uploadFileName = UUID.randomUUID().toString() + "_" + multipartFile.getOriginalFilename();
+        
+        File saveFile = new File(uploadPath, uploadFileName);
+        multipartFile.transferTo(saveFile);
+        
+        log.info("파일 저장 완료: {}", saveFile.getAbsolutePath());
+        
+        return saveFile.getAbsolutePath();
+    }
+}

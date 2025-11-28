@@ -1,0 +1,133 @@
+package kr.or.ddit.service.impl;
+
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.pdf.BaseFont;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
+import org.xhtmlrenderer.pdf.ITextRenderer;
+
+import java.io.*;
+import java.util.UUID; // 임시 파일명 생성용
+
+@Service
+@RequiredArgsConstructor
+public class HtmlToPdfServiceImpl {
+
+
+    private final ResourceLoader resourceLoader;
+
+    /**
+     * CKEditor에서 받은 HTML 내용을 PDF 파일로 생성합니다.
+     * @param htmlContent CKEditor의 HTML 문자열
+     * @return 1단계로 생성된 PDF의 '파일 시스템 경로'
+     * @throws IOException
+     * @throws DocumentException
+     */
+    public String createPdfFromHtml(String htmlContent) throws IOException, DocumentException {
+        // ... (1. 폰트, 2. CSS 로드 부분은 동일) ...
+        Resource fontResource = resourceLoader.getResource("classpath:fonts/NanumGothic.ttf");
+        if (!fontResource.exists()) {
+            throw new IOException("한글 폰트 파일을 찾을 수 없습니다.");
+        }
+        String fontPath = fontResource.getFile().getAbsolutePath();
+
+        Resource cssResource = resourceLoader.getResource("classpath:static/css/contract.css");
+        String cssContent = "";
+        if (cssResource.exists()) {
+            try (InputStream cssStream = cssResource.getInputStream()) {
+                cssContent = new String(cssStream.readAllBytes());
+            }
+        }
+
+        // 3. (★핵심★) HTML '강력 소독'
+        String bodyContentOnly = htmlContent;
+
+        // (?s)는 '줄 바꿈' 무시, (?i)는 '대소문자' 무시
+
+        // <head>...</head> 블록이 있다면 제거
+        bodyContentOnly = bodyContentOnly.replaceAll("(?s)(?i)<head>.*?</head>", "");
+
+        // <style>...</style> 블록이 있다면 제거 (우리가 Java에서 새로 주입할 것임)
+        bodyContentOnly = bodyContentOnly.replaceAll("(?s)(?i)<style.*?</style>", "");
+
+        // <title>...</title>이 있다면 제거
+        bodyContentOnly = bodyContentOnly.replaceAll("(?s)(?i)<title>.*?</title>", "");
+
+        // (이번 오류의 주범) <meta ...> 태그 제거
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)<meta[^>]*>", "");
+
+        // (미래의 오류 방지) 껍데기 태그들 제거
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)<!DOCTYPE[^>]*>", "");
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)<html[^>]*>", "");
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)</html>", "");
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)<body[^>]*>", "");
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)</body>", "");
+
+        // ✅ 추가: font-family 속성 제거
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)font-family:\\s*[^;\"'>]+;?", "");
+
+// ✅ 추가: style 속성이 비어있으면 아예 제거
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)\\s+style=\"\\s*\"", "");
+
+// ✅ 추가: <font> 태그 제거 (태그는 제거하되 내용은 유지)
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)<font[^>]*>", "");
+        bodyContentOnly = bodyContentOnly.replaceAll("(?i)</font>", "");
+
+        // 4. '소독된 알맹이'로 XHTML 문서를 조립 (이하 동일)
+        StringBuilder xhtmlBuilder = new StringBuilder();
+        xhtmlBuilder.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
+        xhtmlBuilder.append("<html xmlns=\"http://www.w3.org/1999/xhtml\">");
+        xhtmlBuilder.append("<head>");
+        xhtmlBuilder.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />");
+        xhtmlBuilder.append("<style type=\"text/css\">");
+        xhtmlBuilder.append("body { font-family: 'Nanum Gothic'; }");
+        xhtmlBuilder.append(cssContent); // CSS 주입
+        xhtmlBuilder.append("</style>");
+        xhtmlBuilder.append("</head>");
+        xhtmlBuilder.append("<body>");
+
+        // 여기에 '소독된' 알맹이만 삽입
+        xhtmlBuilder.append(bodyContentOnly);
+
+        xhtmlBuilder.append("</body>");
+        xhtmlBuilder.append("</html>");
+
+        String finalHtml = xhtmlBuilder.toString();
+
+        // 5. 렌더러 생성 및 폰트 등록 (동일)
+        // 5. 렌더러 생성 및 폰트 등록 (수정!)
+        ITextRenderer renderer = new ITextRenderer();
+
+        // ⛔️ 기존 코드 (CP1252 인코딩으로 강제되어 한글 깨짐)
+        // renderer.getFontResolver().addFont(fontPath, true);
+
+        // ✅ 수정 코드 (IDENTITY_H 인코딩으로 한글 완벽 지원)
+        renderer.getFontResolver().addFont(
+                fontPath,                 // 1. 폰트 경로 (String)
+                "Nanum Gothic",
+                BaseFont.IDENTITY_H,      // 2. 인코딩 (String) - 한글/유니코드 필수!
+                BaseFont.EMBEDDED,        // 3. 폰트 임베드 여부 (boolean)
+                null
+        );
+        renderer.setDocumentFromString(finalHtml);
+        renderer.layout();
+
+        // 6. 임시 파일 저장 (동일)
+        Resource staticResource = resourceLoader.getResource("classpath:static/");
+        File outputDir = new File(staticResource.getFile().getAbsolutePath() + File.separator + "output");
+        if (!outputDir.exists()) { outputDir.mkdirs(); }
+        String tempPdfFilename = "temp_" + UUID.randomUUID().toString() + ".pdf";
+        String savePath = outputDir.getAbsolutePath() + File.separator + tempPdfFilename;
+
+        // 7. PDF 파일로 '인쇄' (동일)
+        try (OutputStream os = new FileOutputStream(savePath)) {
+            renderer.createPDF(os);
+        }
+
+        // 8. 파일 경로 반환 (동일)
+        return savePath;
+    }
+}

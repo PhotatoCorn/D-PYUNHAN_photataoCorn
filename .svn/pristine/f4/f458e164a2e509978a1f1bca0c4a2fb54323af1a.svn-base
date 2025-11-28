@@ -1,0 +1,97 @@
+package kr.or.ddit.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+
+import kr.or.ddit.mapper.EmpMapper;
+import kr.or.ddit.service.BidPblancService;
+import kr.or.ddit.service.NoticeService;
+import kr.or.ddit.vo.BidPblancVO;
+import kr.or.ddit.vo.EmpVO;
+import kr.or.ddit.vo.NoticeVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class EmpViewController {
+	
+	@Autowired
+	BCryptPasswordEncoder bCryptPasswordEncoder;
+	
+	@Autowired
+	EmpMapper empMapper;
+	
+	@Autowired
+	NoticeService noticeService;
+	
+	@Autowired
+	BidPblancService bidPblancService;
+	   
+   //1. /login 요청 URI를 요청하면 login() 메서드로 매핑됨
+   // 뷰리졸버에 의해 /WEB-INF/views/ + login + .jsp로 조립되어 forwarding
+   @GetMapping("/login")
+   
+   public String login(Model model) {
+      log.info("java->" + bCryptPasswordEncoder.encode("qwer"));
+      
+      //나혜선 시작 (11.6 수정함)
+      Map<String,Object> map = new HashMap<>();
+		
+		map.put("limit", 5); //5개씩의 글만 가져올거임
+		
+		List<NoticeVO> noticeVOList = noticeService.maingateselect(map);
+		
+		List<BidPblancVO> bidPblancVOList = bidPblancService.maingateget(map);
+		
+		log.info("noticeVOList : {}",noticeVOList);
+		log.info("bidPblancVOList : {}",bidPblancVOList);
+		
+		model.addAttribute("noticeVOList",noticeVOList);  //jsp에서 사용하기 위해 model에 담기
+		model.addAttribute("bidPblancVOList",bidPblancVOList);
+	 //나혜선 끝
+      
+      return "login"; //jsp
+   }   
+	   
+   //2. /signup 요청 URI를 요청하면 signup() 메서드로 매핑됨
+   // 뷰리졸버에 의해 /WEB-INF/views/ + signup + .jsp로 조립되어 forwarding
+   @GetMapping("/signup")
+   public String signup() {
+	  
+      return "signup"; //jsp
+   }
+   
+   /*
+    요청URI : /user
+   	요청파라미터 : request{email=test@test.com,password=asdf}
+   	요청방식 : post
+    */
+   
+   
+   @PostMapping("/user")
+   public String signup(EmpVO empVO) {
+	   log.info("check: signup/empVO => {}", empVO);
+	   
+	// 비밀번호 암호화
+	    String encodedPassword = bCryptPasswordEncoder.encode(empVO.getEmpPassword());
+	    empVO.setEmpPassword(encodedPassword);
+	    log.info("check: encodedPassword=>{}", encodedPassword);
+	    
+	   return "main";
+	   
+   }
+   
+   @GetMapping("/main")
+   public String main() {
+       return "main";  // /WEB-INF/views/main.jsp 가 존재해야 합니다.
+   }
+   
+}

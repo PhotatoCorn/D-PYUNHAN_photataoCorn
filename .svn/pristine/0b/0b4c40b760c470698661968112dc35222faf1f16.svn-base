@@ -1,0 +1,10 @@
+package kr.or.ddit.service;
+
+import kr.or.ddit.vo.PivotedMtinspVO;
+
+import java.util.List;
+import java.util.Map;
+
+public interface MtinspService {
+    List<PivotedMtinspVO> getUsageHistory(Map<String, Object> searchParams);
+}

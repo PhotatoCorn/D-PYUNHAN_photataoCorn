@@ -1,0 +1,10 @@
+package kr.or.ddit.service;
+
+import kr.or.ddit.vo.MtinspVO;
+
+import java.util.List;
+import java.util.Map;
+
+public interface MtinspService {
+    List<MtinspVO> getUsageHistory(Map<String, Object> searchParams);
+}

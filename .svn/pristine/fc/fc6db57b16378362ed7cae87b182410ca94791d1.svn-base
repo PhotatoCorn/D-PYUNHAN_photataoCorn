@@ -1,0 +1,16 @@
+package kr.or.ddit.mapper;
+
+import kr.or.ddit.vo.MtinspVO;
+import kr.or.ddit.vo.PivotedMtinspVO;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+import java.util.Map;
+
+@Mapper
+public interface MtinspMapper {
+
+    List<MtinspVO> findMetersByMonth(String billingMonth);
+
+    List<PivotedMtinspVO> getUsageHistory(Map<String, Object> searchParams);
+}

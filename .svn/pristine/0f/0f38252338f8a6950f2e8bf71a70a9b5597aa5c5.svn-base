@@ -1,0 +1,9 @@
+package kr.or.ddit.service;
+
+import kr.or.ddit.vo.CcpyManageVO;
+
+public interface CcpyManageService {
+
+	int postCcpyManageVO(CcpyManageVO ccpyManageVO);
+
+}

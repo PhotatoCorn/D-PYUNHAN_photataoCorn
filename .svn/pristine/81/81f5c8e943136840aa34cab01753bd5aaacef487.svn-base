@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.MtinspMapper">
+
+    <select id="findMetersByMonth" parameterType="java.lang.String" resultType="mtinspVO">
+        SELECT
+            HSHLD_ID,
+            IEM_NM,
+            SUM(USGQTY) AS TOTAL_USGQTY  -- 사용량을 합산
+        FROM
+            MTINSP
+        WHERE
+            TO_CHAR(MTINSP_DT, 'YYYYMM') = #{billingMonth}
+        GROUP BY
+            HSHLD_ID, IEM_NM
+    </select>
+
+    <select id="getUsageHistory" resultType="mtinspVO" parameterType="map">
+        SELECT
+        MTINSP_DT,
+        IEM_NM,
+        USGQTY,
+        HSHLD_ID
+        FROM
+        MTINSP
+
+        <where>
+            <if test="hshldId != null and hshldId != ''">
+                HSHLD_ID = #{hshldId}
+            </if>
+            <if test="searchMonth != null and searchMonth != ''">
+                AND TO_CHAR(MTINSP_DT, 'YYYY-MM') = #{searchMonth}
+            </if>
+        </where>
+
+        ORDER BY
+        MTINSP_DT ASC, IEM_NM ASC
+    </select>
+</mapper>

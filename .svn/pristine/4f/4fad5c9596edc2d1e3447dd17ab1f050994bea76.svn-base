@@ -1,0 +1,155 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ include file="../include/header.jsp" %>
+<script type="text/javascript" src="/js/jquery-3.6.0.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<h2>📊 월별 검침 데이터</h2>
+<style>
+    body { font-family: sans-serif; margin: 20px; }
+    table { width: 80%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    h2 { color: #333; }
+    .search-form {
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    .search-form input[type="text"],
+    .search-form input[type="month"] {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .search-form button {
+        padding: 8px 12px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .search-form button:hover { background-color: #0056b3; }
+    .search-form button.reset { background-color: #6c757d; }
+    .search-form button.reset:hover { background-color: #5a6268; }
+</style>
+</head>
+<body>
+
+<h2>세대 검침 이력 (원본 데이터)</h2>
+<div class="search-form">
+    <form action="${pageContext.request.contextPath}/mtinsp/mtinspView" method="get">
+        세대 ID:
+        <input type="text"
+               name="hshldId"
+               value="${searchHshldId}"
+               placeholder="예: 11011001" />
+
+        &nbsp;&nbsp; 검색 월:
+        <input type="month"
+               name="searchMonth"
+               value="${searchMonth}" />
+
+        &nbsp;&nbsp;
+
+        <button type="submit">조회</button>
+
+
+        <button type="button" class="reset"
+                onclick="location.href='${pageContext.request.contextPath}/mtinsp/mtinspView'">
+            전체보기
+        </button>
+    </form>
+    <div style="width: 100%;margin-top: 20px;">
+        <canvas id="myChart"></canvas>
+    </div>
+</div>
+<table>
+    <thead>
+    <tr>
+        <th>검침 시간</th>
+        <th>전기 사용량 (kWh)</th>
+        <th>수도 사용량 (t)</th>
+        <th>가스 사용량 (m³)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <c:choose>
+        <c:when test="${not empty dataList}">
+            <%-- dataList는 PivotedMtinspVO의 리스트 --%>
+            <c:forEach items="${dataList}" var="item">
+                <tr>
+                    <td>
+                            <%-- 날짜 포맷팅 (PivotedMtinspVO의 mtinspDt) --%>
+                        <fmt:formatDate value="${item.mtinspDt}" pattern="MM-dd HH:mm" />
+                    </td>
+                    <td><fmt:formatNumber value="${item.electricUsage}" pattern="#,##0.0#" /></td>
+                    <td><fmt:formatNumber value="${item.waterUsage}" pattern="#,##0.0#" /></td>
+                    <td><fmt:formatNumber value="${item.gasUsage}" pattern="#,##0.0#" /></td>
+                </tr>
+            </c:forEach>
+        </c:when>
+        <c:otherwise>
+            <tr>
+                <td colspan="4">조회된 데이터가 없습니다.</td>
+            </tr>
+        </c:otherwise>
+    </c:choose>
+    </tbody>
+</table>
+
+
+<%-- 4. (💥💥💥 수정) "피벗된" 그래프 스크립트 --%>
+<script>
+    // 5. 컨트롤러가 넘긴 4개의 JSON을 JS 변수로 주입
+    // (컨트롤러가 이 4개 변수를 모델에 안 담았으면 에러납니다)
+    var chartLabels = ${chartLabels};
+    var electricData = ${chartElectric};
+    var waterData = ${chartWater};
+    var gasData = ${chartGas};
+
+    // 6. Chart.js 실행
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line', // 꺾은선 그래프
+        data: {
+            labels: chartLabels, // X축 (날짜/시간 리스트)
+            datasets: [
+                {
+                    label: '전기 사용량 (kWh)',
+                    data: electricData, // Y축 (전기)
+                    borderColor: 'rgba(255, 99, 132, 1)', // 빨강
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1
+                },
+                {
+                    label: '수도 사용량 (t)',
+                    data: waterData, // Y축 (수도)
+                    borderColor: 'rgba(54, 162, 235, 1)', // 파랑
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.1
+                },
+                {
+                    label: '가스 사용량 (m³)',
+                    data: gasData, // Y축 (가스)
+                    borderColor: 'rgba(75, 192, 192, 1)', // 초록
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+
+<%@ include file="../include/footer.jsp" %>

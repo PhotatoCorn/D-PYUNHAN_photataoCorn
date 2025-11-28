@@ -1,0 +1,221 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+
+<script type="text/javascript" src="/js/jquery-3.6.0.js"></script>
+
+<%@ include file="../include/header.jsp"%>
+
+<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+
+<script>
+
+document.addEventListener("DOMContentLoaded",function(){
+
+     const fcltySelect = document.querySelector("#fcltySnId")    //시설/보안 정보 select
+     const cmmitySelect = document.querySelector("#cmmitySnId")   //커뮤니티 정보 select
+     const fcltyPeriod = document.querySelector("#period")      //총 소요 예정기간 input text
+	 const hidenPeriod = document.querySelector("#hiddenper")    //총 소요 예정기간 input hidden
+	 const strDate = document.querySelector("#startDate")       //시설 관리 일정(시작일)
+     const enDate = document.querySelector("#endDate")         //시설 관리 일정(종료일)
+
+
+     fcltySelect.addEventListener("change",function(){  //시설선택
+		if(fcltySelect.value != ""){
+			cmmitySelect.value = "";
+			cmmitySelect.disabled=true;
+		}else{
+			cmmitySelect.disabled=false;
+		}
+	 });
+
+	 cmmitySelect.addEventListener("change",function(){  //커뮤니티 선택
+		if(cmmitySelect.value != ""){
+			fcltySelect.value = "";
+			fcltySelect.disabled=true;
+		}else{
+			fcltySelect.disabled=false;
+		}
+	 });
+	 
+    
+	 let newstrDate = "";   //총 소요 예정시간 계산
+	 let newenDate = "";
+	 
+	strDate.addEventListener("change",function(){
+		  newstrDate  = new Date(strDate.value);
+		  if(strDate.value && enDate.value){
+			 const days = (newenDate-newstrDate) / (1000 * 60 * 60 * 24) +1;
+			  hidenPeriod.value = days;
+			  fcltyPeriod.value = Math.round(days) + "일";
+		 }
+	});
+		
+	enDate.addEventListener("change",function(){ 
+		 newenDate = new Date(enDate.value);
+		 if(strDate.value && enDate.value){
+			 const days = (newenDate-newstrDate) / (1000 * 60 * 60 * 24) +1;
+			  hidenPeriod.value = days;
+			  fcltyPeriod.value = Math.round(days) + "일";
+		 }
+	});
+		
+
+	const ok = document.querySelector("#okBtn");   //등록 버튼
+
+	ok.addEventListener("click",function(){  //등록 버튼을 누르면
+
+		const empId = document.querySelector("#empId").value;
+        const fcltySn = document.querySelector("#fcltySnId").value;
+        const cmmntySn = document.querySelector("#cmmitySnId").value;
+        const fcltymanageCn = document.querySelector("#message").value;
+        const fcltymanageBeginDt = document.querySelector("#startDate").value;
+        const fcltymanageEndDt = document.querySelector("#endDate").value;
+		const fcltymanagePrearngePd = document.querySelector("#hiddenper").value;
+        const chckSttus = document.querySelector("#chckSttus").value;
+
+        if(fcltymanageBeginDt>fcltymanageEndDt){
+			alert("종료일은 시작일보다 작을 수 없습니다.");
+			return;
+		}
+
+		//컨트롤러에 보내는 기본 데이터
+		let nhs ={
+			"empId":empId,
+			"fcltySn":fcltySn,
+			"cmmntySn":cmmntySn,
+			"fcltymanageCn":fcltymanageCn,
+			"fcltymanageBeginDt":fcltymanageBeginDt,
+			"fcltymanageEndDt":fcltymanageEndDt,
+			"fcltymanagePrearngePd":fcltymanagePrearngePd	
+		}
+		
+       if(fcltySn != null && fcltySn != ""){   //점검 상태 조건
+		  nhs.fcltymanageChcksttus = chckSttus;  //시설 점검상태 직접 저장
+		  nhs.fcltySttus = chckSttus;       //시설 테이블도 갱신
+	   }else if(cmmntySn != null && cmmntySn != ""){
+		  nhs.fcltymanageChcksttus = chckSttus;
+		  nhs.cmmntyChcksttus = chckSttus;
+	   }
+
+		console.log("nhs :",nhs);
+
+        fetch("/fcltyManage/registerPost",{
+           method:"post",
+		   headers:{'Content-Type':"application/json;charset=utf-8"},
+		   body: JSON.stringify(nhs)
+		})
+		.then(response=>{
+           return response.json();
+		})
+		.then(data=>{
+           console.log("data",data);
+           if(data.result>0){
+        	   alert("등록을 완료했습니다.");
+        	   location.href="/fcltyManage/list";   //등록 후 이동할 곳
+           }else{
+        	   alert("등록을 실패했습니다.");
+           }
+		})
+		.catch(erroer=>{
+           console.log("erroer",erroer);
+		})
+	});
+});
+
+
+</script>
+
+</head>
+<body>
+
+<h1>시설 관리</h1>
+
+	<!--// body 시작 //-->
+<%-- <c:forEach var="fMVO" items="${fcltyManageVoList}">
+	${fMVO.empVO.nm}
+</c:forEach>  우현님 예시 fMVO.EMPVO.NM 이렇게 가져올수있다--%>
+
+
+ <form action="/fcltyManage/registerPost" method="post">
+
+ <div  class="card">
+	<div  class="card-header">시설 관리</div>
+		 <div class="card-body">
+			 <div  class="mb-1">
+				 <label class="fcltyempId">담당자</label> <br/>
+				    <select id="empId" name="empId">
+				      <option value="">---선택하세요---</option>     <!-- 시설관리팀 부서 직원ID만 가져옴 -->
+				      <c:forEach var="emp" items="${empList}">   <!--items : 원소를 꺼낼 곳 / var: 원소를 임시로 담는 변수명-->
+				        <option value="${emp.empId}">${emp.nm}</option>
+				      </c:forEach>
+				    </select> 
+		     </div>		
+		     		     
+		    <%-- <p>흥 ${fcltyVOList}</p> --%>
+		    
+		     <div  class="mb-2">
+				 <label class="fcltySn">시설/보안 정보</label> <br/>  
+				     <select id="fcltySnId" name="fcltySnId">
+				      <option value="">---선택하세요---</option>
+				      <c:forEach var="fclty" items="${fcltyVOList}">
+				        <option value="${fclty.fcltySn}">${fclty.fcltyNm} ${fclty.fcltyLc}</option>				      
+				      </c:forEach>
+				    </select> 
+		     </div>	
+		     		     
+		    <%-- <p>${cmmntyVOList}</p> --%>
+		     <div  class="mb-3">
+				 <label class="cmmitySn">커뮤니티 정보</label> <br/>
+				    <select id="cmmitySnId" name="cmmitySnId">
+				      <option value="">---선택하세요---</option>
+				      <c:forEach var="cmmnty" items="${cmmntyVOList}">
+				         <option value="${cmmnty.cmmntySn}">${cmmnty.cmmntyNm}</option>			      
+				      </c:forEach>
+				    </select> 
+		     </div>	
+		     
+		     <div  class="mb-4">
+				 <label class="fcltyManageCl">시설관리 내용</label> <br/>
+				    <textarea id="message" name="message" rows="4" cols="50" placeholder="내용을 입력하세요"></textarea>
+		     </div>
+		     
+		     
+		     <div  class="mb-2">
+				 <label class="Sttus">점검 상태</label> <br/>  
+				     <select id="chckSttus" name="chckSttus">
+				      <option value="">---선택하세요---</option>                  
+		               <option value="점검예정">점검예정</option>                                                             
+		               <option value="점검중">점검중</option>                      
+				    </select> 
+		     </div>	
+		     		     
+		     <div  class="mb-5">
+				 <label class="fcltyManageCl">시설관리 일정</label> <br/>
+				   <input type="datetime-local" id="startDate" name="startDate" /> ~ 
+				   <input type="datetime-local" id="endDate" name="endDate" />
+		     </div>
+		     
+		      <div  class="mb-5">
+				 <label class="fcltyPrePd">총 소요 에정기간</label> <br/>
+				   <input type="hidden" id="hiddenper" name="hiddenper" value="${FcltyManageVO.fcltymanagePrearngePd}"/>
+				   <input type="text" id="period" name="period" readonly /> 
+		     </div>
+		     
+		     <button type="button" id="okBtn">등록</button>
+		     <button type="reset" id="cancelBtn">취소</button>
+        
+         </div>
+     </div>
+
+	</form>
+
+	<!--// body 끝 //-->
+
+	<%@ include file="../include/footer.jsp"%>
+</body>
+</html>

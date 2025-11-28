@@ -1,0 +1,124 @@
+package kr.or.ddit.service.impl;
+
+import kr.or.ddit.service.PdfStampingService;
+import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
+
+@Service
+@RequiredArgsConstructor // (수정) 생성자 주입
+public class PdfStampingServiceImpl implements PdfStampingService {
+
+    // (수정) final 키워드 추가
+    private final ResourceLoader resourceLoader;
+
+    @Override
+    public String stampPdf(String sessionId, String base64ImageData) throws IOException {
+
+        String originalPdfPath = "classpath:static/original.pdf";
+        File originalFile = resourceLoader.getResource(originalPdfPath).getFile();
+
+        // (수정!) 1. PDF 문서를 try-with-resources로 감싸서 자동 close() 보장
+        try (PDDocument document = PDDocument.load(originalFile)) {
+
+            // Base64 디코딩
+            String pureBase64 = base64ImageData.substring(base64ImageData.indexOf(",") + 1);
+            byte[] imageBytes = Base64.getDecoder().decode(pureBase64);
+
+            // byte 배열로부터 PDF 이미지 객체 생성
+            PDImageXObject stampImage = PDImageXObject.createFromByteArray(document, imageBytes, "signature.png");
+
+            // 마지막 페이지에 서명 삽입
+            PDPage lastPage = document.getPage(document.getNumberOfPages() - 1);
+
+            // (수정!) 2. ContentStream도 try-with-resources 사용
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, lastPage,
+                    PDPageContentStream.AppendMode.APPEND, true, true)) {
+
+                float x = lastPage.getMediaBox().getWidth() - 300;
+                float y = 310;
+                contentStream.drawImage(stampImage, x, y, 140, 70);
+            }
+
+            // (수정!) 3. 'static' 폴더의 실제 파일 시스템 경로를 가져옵니다.
+            Resource staticResource = resourceLoader.getResource("classpath:static/");
+            String staticFolderPath = staticResource.getFile().getAbsolutePath();
+
+            // (수정!) 4. 'output' 디렉토리를 생성합니다. (없으면)
+            File outputDir = new File(staticFolderPath + File.separator + "output");
+            if (!outputDir.exists()) {
+                outputDir.mkdirs(); // 디렉토리 생성
+            }
+
+            // 새 파일로 저장
+            String newPdfFilename = "stamped_" + sessionId + ".pdf";
+            String savePath = outputDir.getAbsolutePath() + File.separator + newPdfFilename;
+
+            document.save(savePath);
+            // document.close()는 try-with-resources가 자동으로 해줌
+
+            // 브라우저가 접근할 수 있는 URL 반환 (동일)
+            return "/output/" + newPdfFilename;
+
+        } // try (document)가 여기서 닫힘
+    }
+
+    @Override
+    public String stampServerSeal(String generatedPdfPath, String sessionId) throws IOException {
+
+        File originalFile = new File(generatedPdfPath);
+        String sealImagePath = "classpath:seals/company_seal.png";
+        Resource sealResource = resourceLoader.getResource(sealImagePath);
+
+        try (PDDocument document = PDDocument.load(originalFile);
+             InputStream sealInputStream = sealResource.getInputStream()) {
+
+            // ★★★ 여기가 진짜 수정된 부분입니다 ★★★
+
+            // 1. InputStream을 byte[] 배열로 변환합니다. (Java 9+ 이상)
+            byte[] sealBytes = sealInputStream.readAllBytes();
+
+            // 2. 캡처 화면에 있던 그 메서드 'createFromByteArray'를 사용합니다.
+            PDImageXObject stampImage = PDImageXObject.createFromByteArray(document, sealBytes, "company_seal.png");
+
+            // 마지막 페이지에 서명 삽입 (이하는 동일)
+            PDPage lastPage = document.getPage(document.getNumberOfPages() - 1);
+
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, lastPage,
+                    PDPageContentStream.AppendMode.APPEND, true, true)) {
+
+                float x = lastPage.getMediaBox().getWidth() - 490;
+                float y = 310;
+                float width = 70;
+                float height = 70;
+
+                contentStream.drawImage(stampImage, x, y, width, height);
+            }
+
+            // (저장 로직은 동일)
+            Resource staticResource = resourceLoader.getResource("classpath:static/");
+            File outputDir = new File(staticResource.getFile().getAbsolutePath() + File.separator + "output");
+            if (!outputDir.exists()) {
+                outputDir.mkdirs();
+            }
+
+            String newPdfFilename = "final_contract_" + sessionId + ".pdf";
+            String savePath = outputDir.getAbsolutePath() + File.separator + newPdfFilename;
+
+            document.save(savePath);
+
+            return "/output/" + newPdfFilename;
+        }
+    }
+
+}

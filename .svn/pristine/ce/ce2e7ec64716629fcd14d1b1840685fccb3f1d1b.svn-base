@@ -1,0 +1,41 @@
+package kr.or.ddit.service.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.mapper.CcpyManageMapper;
+import kr.or.ddit.service.CcpyManageService;
+import kr.or.ddit.vo.BizcndIndutyVO;
+import kr.or.ddit.vo.CcpyAuthorVO;
+import kr.or.ddit.vo.CcpyManageVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class CcpyManageServiceImpl implements CcpyManageService {
+
+	@Autowired
+	CcpyManageMapper ccpyManageMapper;
+
+	@Override
+	public int postCcpyManageVO(CcpyManageVO ccpyManageVO) {
+		
+		int result = this.ccpyManageMapper.postCcpyManageVO(ccpyManageVO);				
+		log.info("check : result => {}", result);
+		
+		CcpyAuthorVO ccpyAuthorVO = new CcpyAuthorVO();
+		ccpyAuthorVO.setCcpyManageId(ccpyManageVO.getCcpyManageId());
+		
+		result += this.ccpyManageMapper.postCcpyAuthor(ccpyAuthorVO);
+		
+		log.info("check : result => {}", result);
+		
+		for(BizcndIndutyVO bizcndIndutyVO: ccpyManageVO.getBizcndIndutyVOList()) {
+			bizcndIndutyVO.setCcpyManageId(ccpyManageVO.getCcpyManageId());
+			result+=this.ccpyManageMapper.postbizcndIndutyVO(bizcndIndutyVO);
+		}
+		log.info("check : result => {}", result);
+		return result;
+	}
+	
+}

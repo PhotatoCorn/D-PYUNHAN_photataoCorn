@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.ElctrncsanctnMapper">
+
+	<sql id="where">
+		<if test="keyword != null and keyword != ''">
+    		and (drft_sj like '%' || #{keyword} || '%')
+    	</if>
+	</sql>
+	
+	<resultMap type="elctrnsanctnManageVO" id="elctrnsanctnManageVOMap">
+		<result property="elctrnsanctnManageId" column="ELCTRNSANCTN_MANAGE_ID"/>
+		<result property="sanctnSecode" column="SANCTN_SECODE"/>
+	</resultMap>
+	
+	<resultMap type="drftDocVO" id="drftDocVOMap">
+		<result property="drftDocId" column="DRFT_DOC_ID"/>
+		<result property="drftDocNm" column="DRFT_DOC_NM"/>
+		<result property="validDudt" column="VALID_DUDT"/>
+		<result property="drftDocFormat" column="DRFT_DOC_FORMAT"/>
+		<result property="elctrnsanctnManageId" column="ELCTRNSANCTN_MANAGE_ID"/>
+		<association property="elctrnsanctnManageVO" resultMap="elctrnsanctnManageVOMap"></association>
+	</resultMap>
+	
+	<resultMap type="ElctrnsanctnVO" id="elctrnsanctnVOMap">
+		<id property="elctrnsanctnSn" column="ELCTRNSANCTN_SN"/>
+		<result property="rnum" column="RNUM"/>
+		<result property="elctrnsanctnManageId" column="ELCTRNSANCTN_MANAGE_ID"/>
+		<result property="drftSj" column="DRFT_SJ"/>
+		<result property="drftTmprstre" column="DRFT_TMPRSTRE"/>
+		<result property="elctrnsanctnSn" column="ELCTRNSANCTN_SN"/>
+		<result property="empId" column="EMP_ID"/>
+		<result property="drftDt" column="DRFT_DT"/>
+		<result property="creatDt" column="CREAT_DT"/>
+		<result property="updtDt" column="UPDT_DT"/>
+		<result property="drftDocId" column="DRFT_DOC_ID"/>
+		<result property="drftCn" column="DRFT_CN"/>
+		<result property="upperElctrnsanctnId" column="UPPER_ELCTRNSANCTN_ID"/>
+		<result property="bkmkSanctnlnId" column="BKMK_SANCTNLN_ID"/>
+		<result property="fileGroupSn" column="FILE_GROUP_SN"/>
+		<association property="drftDocVO" resultMap="drftDocVOMap"></association>
+		<collection property="sanctnlnVOList" resultMap="sanctnlnVOMap"></collection>
+	</resultMap>
+	
+	<resultMap type="SanctnlnVO" id="sanctnlnVOMap">
+		<result property="sanctnlnId" column="SANCTNLN_ID"/>
+		<result property="sanctnOrdr" column="SANCTN_ORDR"/>
+		<result property="sanctnSttus" column="SANCTN_STTUS"/>
+		<result property="sanctnDt" column="SANCTN_DT"/>
+		<result property="returnPrvonsh" column="RETURN_PRVONSH"/>
+		<result property="elctrnsanctnSn" column="ELCTRNSANCTN_SN"/>
+		<result property="empId" column="SANCTN_EMP_ID"/>
+		<result property="dcrbmanAt" column="DCRBMAN_AT"/>
+		<association property="empVO" resultMap="EmpVOMap"></association>
+	</resultMap>
+	
+	<select id="getElctrnsanctnVOList" parameterType="hashMap" resultMap="elctrnsanctnVOMap">
+		WITH T AS(
+			SELECT 	ROWNUM RNUM,
+					F.*
+			FROM
+			(SELECT
+			    a.elctrnsanctn_sn,
+			    a.emp_id,
+			    a.drft_dt,
+			    a.creat_dt,
+			    a.updt_dt,
+			    a.drft_doc_id,
+			    a.drft_cn,
+			    a.upper_elctrnsanctn_id,
+			    a.bkmk_sanctnln_id,
+			    a.file_group_sn,
+			    a.drft_sj,
+			    a.drft_tmprstre,
+			    a.elctrnsanctn_manage_id,
+	    		c.DRFT_DOC_NM,
+	    		d.SANCTN_SECODE
+			FROM
+			    elctrnsanctn a
+		    left outer join DRFT_DOC c on (a.drft_doc_id = c.drft_doc_id and a.elctrnsanctn_manage_id = c.elctrnsanctn_manage_id)
+		    left outer join ELCTRNSANCTN_MANAGE d on(c.elctrnsanctn_manage_id = d.elctrnsanctn_manage_id)
+			where 1=1
+			<include refid="where"></include>
+			order by a.elctrnsanctn_sn desc
+			) F
+		)
+		SELECT * 
+			FROM T
+			WHERE T.RNUM BETWEEN (#{currentPage}*10)-(10-1) and (#{currentPage}*10)
+	</select>
+	
+	<!-- 페이지네이션 시작 -->
+		<!--  전체 행의 수 -->
+		<select id="getTotal" resultType="int" parameterType="hashMap">
+			select count(*)
+				from elctrnsanctn
+				where 1 = 1
+				<include refid="where"></include>
+		</select>
+	
+	<select id="getSanctnlnList" parameterType="int" resultMap="sanctnlnVOMap">
+		SELECT 	a.*,
+				b.*
+			FROM sanctnln a
+			inner join emp b on (a.emp_id = b.emp_id)
+			WHERE elctrnsanctn_sn = #{elctrnsanctnSn}
+	</select>
+	
+	
+	<select id="getElctrnsanctnManageVOList" resultType="ElctrnsanctnManageVO">
+		select  ELCTRNSANCTN_MANAGE_ID, SANCTN_SECODE
+			from Elctrnsanctn_Manage
+	</select>
+	
+	<select id="getDrftDocVOList" parameterType="ElctrnsanctnManageVO" resultType="DrftDocVO">
+		select *
+			from drft_doc
+			where ELCTRNSANCTN_MANAGE_ID = #{elctrnsanctnManageId}
+	</select>
+	
+	<select id="getDrftDocFormat" resultType="DrftDocVO" parameterType="DrftDocVO">
+		select *
+			from drft_doc
+			where DRFT_DOC_ID = #{drftDocId}
+	</select>
+	
+	<select id="getEmpVOList" resultType="EmpVO" parameterType="EmpVO">
+		select *
+			from emp
+			where dept_code = #{deptCode}
+				and emp_id != #{empId}
+	</select>
+	
+	<resultMap type="DeptVO" id="DeptVOMap">
+		<result property="deptCode" column="DEPT_CODE"/>
+		<result property="deptNm" column="DEPT_NM"/>
+		<result property="deptCttpc" column="DEPT_CTTPC"/>
+		<collection property="empVOList" resultMap="EmpVOMap"></collection>
+	</resultMap>
+	
+	<resultMap type="EmpVO" id="EmpVOMap">
+		<result property="telno" column="TELNO"/>
+		<result property="email" column="EMAIL"/>
+		<result property="adres" column="ADRES"/>
+		<result property="brthdy" column="BRTHDY"/>
+		<result property="salary" column="SALARY"/>
+		<result property="deptCode" column="DEPT_CODE"/>
+		<result property="suprrId" column="SUPRR_ID"/>
+		<result property="enabled" column="ENABLED"/>
+		<result property="empId" column="EMP_ID"/>
+		<result property="empPassword" column="EMP_PASSWORD"/>
+		<result property="clsf" column="CLSF"/>
+		<result property="nm" column="NM"/>
+	</resultMap>
+	
+	<select id="getDeptVOList" parameterType="EmpVO" resultMap="DeptVOMap">
+		select 	a.*,
+				b.EMP_ID, b.EMP_PASSWORD, b.CLSF, b.NM, b.TELNO, b.EMAIL, b.ADRES, b.BRTHDY, b.SALARY, b.SUPRR_ID, b.ENABLED
+			from dept a
+			left outer join emp b on(a.dept_code = b.dept_code)
+			where b.emp_id != #{empId}
+	</select>
+	
+	<insert id="postElctrnsanctn" parameterType="ElctrnsanctnVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="elctrnsanctnSn">
+			select NVL(MAX(elctrnsanctn_sn), 0)+1
+				from elctrnsanctn
+		</selectKey>
+			INSERT INTO elctrnsanctn (
+			    elctrnsanctn_sn,
+			    emp_id,
+			    creat_dt,
+			    drft_doc_id,
+			    elctrnsanctn_manage_id,
+			    drft_sj,
+			    drft_cn,
+			    bkmk_sanctnln_id,
+			    file_group_sn,
+			    drft_tmprstre,
+			    upper_elctrnsanctn_id
+			) VALUES (
+				#{elctrnsanctnSn}
+				, #{empId}
+				, sysdate
+				, #{drftDocId}
+				, #{elctrnsanctnManageId}
+			    , #{drftSj}
+			    , #{drftCn}
+			    , nullif(#{bkmkSanctnlnId},0)
+			    , nullif(#{fileGroupSn}, 0)
+				, #{drftTmprstre}
+				, nullif(#{upperElctrnsanctnId}, 0)
+			)
+	</insert>
+	
+	<insert id="postSanctnln" parameterType="sanctnlnVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="sanctnlnId">
+			select NVL(MAX(sanctnln_id), 0)+1 
+				from sanctnln
+		</selectKey>
+		INSERT INTO sanctnln (
+		    sanctnln_id,
+		    sanctn_ordr,
+		    sanctn_sttus,
+		    elctrnsanctn_sn,
+		    emp_id,
+		    dcrbman_at
+		) VALUES (
+		    #{sanctnlnId}
+			, #{sanctnOrdr}
+			, #{sanctnSttus}
+			, #{elctrnsanctnSn}
+			, #{empId}
+			, #{dcrbmanAt}
+		)
+	</insert>
+	
+	<insert id="postDrftRefrn" parameterType="drftRefrnVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="drftRefrnId">
+			select NVL(MAX(drft_refrn_id), 0)+1
+				from drft_refrn
+		</selectKey>
+		INSERT INTO drft_refrn (
+		    drft_refrn_id,
+		    elctrnsanctn_sn,
+		    emp_id
+		) VALUES (
+		    #{drftRefrnId}
+			, #{elctrnsanctnSn}
+			, #{empId}
+		)
+	</insert>
+	
+	<select id="getElctrnsanctn" parameterType="elctrnsanctnVO" resultType="elctrnsanctnVO">
+		SELECT *
+			FROM elctrnsanctn 
+	    where elctrnsanctn_sn = #{elctrnsanctnSn}
+	</select>
+	
+	
+	<select id="getEmpVO" parameterType="string" resultType="EmpVO">
+		select *
+			from emp
+			where emp_id = #{empId}
+	</select>
+	
+	<select id="getDrftDocVO" parameterType="elctrnsanctnVO" resultMap="drftDocVOMap">
+		select 	a.* 
+				, b.ELCTRNSANCTN_MANAGE_ID
+				, b.SANCTN_SECODE				
+			from drft_doc a
+			left outer join ELCTRNSANCTN_MANAGE b on(a.ELCTRNSANCTN_MANAGE_ID=b.ELCTRNSANCTN_MANAGE_ID)
+			where a.DRFT_DOC_ID = #{drftDocId}
+				and a.ELCTRNSANCTN_MANAGE_ID = #{elctrnsanctnManageId}
+	</select>
+	
+	<resultMap type="DrftRefrnVO" id="DrftRefrnVOMap">
+		<result property="drftRefrnId" column="DRFT_REFRN_ID"/>
+		<result property="elctrnsanctnSn" column="ELCTRNSANCTN_SN"/>
+		<result property="empId" column="EMP_ID"/>
+		<association property="empVO" resultMap="EmpVOMap"></association>
+	</resultMap>
+	
+	<select id="getdrftRefrnList" parameterType="int" resultMap="DrftRefrnVOMap">
+		select 	a.*,
+				b.*
+			from DRFT_REFRN a
+			inner join emp b on(a.emp_id = b.emp_id)
+			where ELCTRNSANCTN_SN =#{elctrnsanctnSn}
+	</select>
+	
+	<delete id="delSanctnln" parameterType="elctrnsanctnVO">
+		delete from SANCTNLN
+			where ELCTRNSANCTN_SN = #{elctrnsanctnSn}
+	</delete>
+	
+	<delete id="deldrftRefrn" parameterType="elctrnsanctnVO">
+		delete from DRFT_REFRN
+			where ELCTRNSANCTN_SN = #{elctrnsanctnSn}
+	</delete>
+	
+	<update id="updateElctrnsanctn" parameterType="elctrnsanctnVO">
+		UPDATE elctrnsanctn
+			SET
+			    drft_dt = sysdate
+			    , updt_dt = sysdate
+			    , drft_cn = #{drftCn}
+			    , upper_elctrnsanctn_id = nullif(#{upperElctrnsanctnId} , 0)
+			    , bkmk_sanctnln_id = nullif(#{bkmkSanctnlnId}, 0)
+			    , file_group_sn = nullif(#{fileGroupSn}, 0)
+			    , drft_sj =  #{drftSj}
+			    , drft_tmprstre = #{drftTmprstre}
+			WHERE
+			    elctrnsanctn_sn = #{elctrnsanctnSn}
+	</update>
+</mapper>

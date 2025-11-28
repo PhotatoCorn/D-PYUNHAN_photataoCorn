@@ -1,0 +1,170 @@
+package kr.or.ddit.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import kr.or.ddit.mapper.EmpMapper;
+import kr.or.ddit.service.BidPblancService;
+import kr.or.ddit.service.CvplRceptService;
+import kr.or.ddit.service.ElctrncsanctnService;
+import kr.or.ddit.service.FxService;
+import kr.or.ddit.service.NoticeService;
+import kr.or.ddit.service.VoteMtrService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.BidPblancVO;
+import kr.or.ddit.vo.ElctrnsanctnVO;
+import kr.or.ddit.vo.EmpVO;
+import kr.or.ddit.vo.NoticeVO;
+import kr.or.ddit.vo.SanctnlnVO;
+import kr.or.ddit.vo.VoteMtrVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+public class EmpViewController {
+	
+	@Autowired
+	BCryptPasswordEncoder bCryptPasswordEncoder;
+	@Autowired
+	EmpMapper empMapper;
+	@Autowired
+	NoticeService noticeService;
+	@Autowired
+	BidPblancService bidPblancService;
+	/*11-13kbh 메인페이지 볼 기능들 추가*/
+	@Autowired	// 결재
+	ElctrncsanctnService elctrnsanctnService;	
+    @Autowired	//민원
+    CvplRceptService cvplRceptService;
+	@Autowired	//투표
+	VoteMtrService voteMtrService;  
+    @Autowired	//일정관리
+	FxService fxService;
+    /*kbh 추가 끝*/
+	
+   //1. /login 요청 URI를 요청하면 login() 메서드로 매핑됨
+   // 뷰리졸버에 의해 /WEB-INF/views/ + login + .jsp로 조립되어 forwarding
+   @GetMapping("/login")
+   
+   public String login(Model model) {
+      log.info("java->" + bCryptPasswordEncoder.encode("qwer"));
+      
+      //나혜선 시작 (11.6 수정함)
+      Map<String,Object> map = new HashMap<>();
+		
+		map.put("limit", 5); //5개씩의 글만 가져올거임
+		
+		List<NoticeVO> noticeVOList = noticeService.maingateselect(map);
+		
+		List<BidPblancVO> bidPblancVOList = bidPblancService.maingateget(map);
+		
+		log.info("noticeVOList : {}",noticeVOList);
+		log.info("bidPblancVOList : {}",bidPblancVOList);
+		
+		model.addAttribute("noticeVOList",noticeVOList);  //jsp에서 사용하기 위해 model에 담기
+		model.addAttribute("bidPblancVOList",bidPblancVOList);
+	 //나혜선 끝
+      
+      return "login"; //jsp
+   }   
+	   
+   //2. /signup 요청 URI를 요청하면 signup() 메서드로 매핑됨
+   // 뷰리졸버에 의해 /WEB-INF/views/ + signup + .jsp로 조립되어 forwarding
+   @GetMapping("/signup")
+   public String signup() {
+	  
+      return "signup"; //jsp
+   }
+   
+   /*
+    요청URI : /user
+   	요청파라미터 : request{email=test@test.com,password=asdf}
+   	요청방식 : post
+    */
+   
+   
+   @PostMapping("/user")
+   public String signup(EmpVO empVO) {
+	   log.info("check: signup/empVO => {}", empVO);
+	   
+	// 비밀번호 암호화
+	    String encodedPassword = bCryptPasswordEncoder.encode(empVO.getEmpPassword());
+	    empVO.setEmpPassword(encodedPassword);
+	    log.info("check: encodedPassword=>{}", encodedPassword);
+	    
+	   return "main";
+	   
+   }
+   
+   @GetMapping("/main")
+   public String main(
+		   /*kbh추가 메인화면에서 보여줄 항목 가져오기 articlePage1은 민원 2는 결재*/
+		   Model model
+			, @RequestParam(value = "currentPage", required = false, defaultValue = "1") int currentPage
+			, @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword
+			, @RequestParam(value = "periodFrom",  required = false) String periodFrom
+	        , @RequestParam(value = "periodTo",    required = false) String periodTo
+	        , @RequestParam(value = "stat",        required = false) String stat
+	        , @RequestParam(value="start",required=false) String start /* start, end는 캘린더 */
+			, @RequestParam(value="end",required=false) String end
+			, @RequestParam(value="size", required=false, defaultValue="5") int size //한페이지에 보여줄 글 수
+			) {
+		// 한 화면에 보여질 행의 수
+		// 전체 행의 수*
+		// 시작,끝 시간이 뒤집히면 역전시키기					//문자열 사전순으로 비교메서드(compareTo)
+		if (periodFrom != null && periodTo != null && periodFrom.compareTo(periodTo) > 0) {
+			String tmp = periodFrom;
+			periodFrom = periodTo;
+			periodTo = tmp;
+		}
+		// 투표리스트 목록
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		map.put("currentPage", currentPage);
+		map.put("keyword", keyword);
+		map.put("periodFrom", periodFrom);
+	    map.put("periodTo", periodTo);
+	    map.put("stat", stat);
+	    map.put("size", size);
+		// total에 넣자
+	    int total = this.voteMtrService.getTotal(map);
+		
+		//detail에서 voteMtrList를 써서 voteMtr2VO로 했음 //목록조회 (여기에 다담겨옴)
+		List<VoteMtrVO> voteMtrVOList2 = this.voteMtrService.voteList(map);
+		
+		// 결재 목록
+		List<ElctrnsanctnVO> elctrnsanctnVOList = this.elctrnsanctnService.getElctrnsanctnVOListSm(map);
+		ArticlePage<ElctrnsanctnVO> articlePage2 = new ArticlePage<ElctrnsanctnVO>(total, currentPage, size, elctrnsanctnVOList, keyword);
+		for(ElctrnsanctnVO vo : elctrnsanctnVOList) {
+		    List<SanctnlnVO> sanctnlnList = this.elctrnsanctnService.getSanctnlnList(vo.getElctrnsanctnSn());
+		    vo.setSanctnlnVOList(sanctnlnList);
+		}
+		model.addAttribute("articlePage2", articlePage2);
+		// 결재 목록
+		
+		// 투표
+		// 페이지네이션
+		ArticlePage<VoteMtrVO> articlePage1 = new ArticlePage<VoteMtrVO>(total, currentPage, size, voteMtrVOList2, keyword);
+
+		model.addAttribute("voteMtrVOList2", voteMtrVOList2);
+		model.addAttribute("articlePage1", articlePage1);
+		model.addAttribute("keyword", keyword);
+	    model.addAttribute("periodFrom", periodFrom);
+	    model.addAttribute("periodTo", periodTo);
+	    model.addAttribute("stat", stat);
+		// 투표
+									/* 투표 정보,캘린더 불러오기 끝*/
+		
+	    return "main";  // /WEB-INF/views/main.jsp 가 존재해야 합니다.
+   }
+   
+}

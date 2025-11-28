@@ -1,0 +1,177 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%-- <%@ include file="../include/header.jsp" %>--%>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF 미리보기 및 서명</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        /* --- (기존 스타일) --- */
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        .viewer-container { position: relative; width: 100%; height: 80vh; }
+        .pdf-viewer { width: 100%; height: 100%; border: none; }
+        .sign-button {
+            position: absolute; bottom: 30px; right: 30px;
+            padding: 12px 25px; background-color: #007bff; color: white;
+            border: none; border-radius: 5px; font-size: 16px;
+            font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        .sign-button:hover { background-color: #0056b3; }
+
+        /* (QR 모달 스타일) */
+        .qr-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);
+            z-index: 99; justify-content: center; align-items: center;
+        }
+        .qr-modal-content {
+            background: white; padding: 30px; border-radius: 10px;
+            text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #qrcode { width: 200px; height: 200px; margin: 20px auto 0; }
+
+        /* [!!!] 1. (FIX) 누락되었던 스타일 추가 [!!!] */
+        #status {
+            font-size: 1.1em; color: #555;
+            margin: 15px; font-weight: bold;
+            text-align: center;
+        }
+        #pdf-div { /* (서명 완료 후 최종 PDF가 표시될 영역) */
+            display: none; width: 100%; height: 100vh; margin: 20px auto;
+            text-align: center;
+        }
+        #pdf-frame { width: 100%; height: 80%; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<%-- [!!!] 2. (FIX) 누락되었던 'status' div 추가 [!!!] --%>
+<div id="status">서버 연결 중...</div>
+
+<div class="viewer-container" id="viewer-container">
+    <iframe src="<c:url value='${fileVO.fileStrelc}' />" class="pdf-viewer">
+        <p>이 브라우저는 PDF 미리보기를 지원하지 않습니다.</p>
+    </iframe>
+
+    <button type="button" class="sign-button" onclick="showQrModal()">
+        사인하러가기
+    </button>
+</div>
+
+<div class="qr-modal-overlay" id="qrModal">
+    <div class="qr-modal-content">
+        <h4>모바일 기기로 QR 코드를 스캔하세요</h4>
+        <p>모바일에서 서명을 완료하면 이 창은 자동으로 닫힙니다.</p>
+        <div id="qrcode"></div>
+        <button onclick="hideQrModal()" style="margin-top: 20px;">닫기</button>
+    </div>
+</div>
+
+<%-- [!!!] 3. (FIX) 누락되었던 'pdf-div' (최종본 표시) div 추가 [!!!] --%>
+<div id="pdf-div">
+    <h2 style="color: blue;">✅ 서명이 완료되었습니다!</h2>
+    <iframe id="pdf-frame" src=""></iframe>
+</div>
+
+
+<script>
+    // --- (컨트롤러에서 받은 값) ---
+    const signToken = "${signToken}";
+    // [!!!] 1. (수정) PC의 IP 주소 하드코딩 [!!!]
+    // (cmd -> ipconfig 에서 찾은 192.168.x.x 주소 입력)
+    const PC_IP_ADDRESS = "192.168.141.46"; // 🚨🚨 본인 IP로 수정 🚨🚨
+    const SERVER_PORT = "${pageContext.request.serverPort}";
+    const CONTEXT_PATH = "${pageContext.request.contextPath}";
+
+    // (JSP 내부에서 사용할 URL - localhost 가능)
+    const serverUrl = "${pageContext.request.scheme}://${pageContext.request.serverName}:${SERVER_PORT}${CONTEXT_PATH}";
+
+    // (모바일 -> PC 접속용 URL)
+    const mobileAccessUrl = "http://" + PC_IP_ADDRESS + ":" + SERVER_PORT + CONTEXT_PATH;
+
+    // (웹소켓 접속 URL - IP 기반)
+    const wsUrl = "ws://" + PC_IP_ADDRESS + ":" + SERVER_PORT + CONTEXT_PATH + "/ws/sign/" + signToken;
+
+
+    let qrcode = null;
+
+    // --- (웹소켓 연결 로직 - 수정) ---
+    // (이제 localhost가 아닌 IP로 접속)
+    console.log("[WS] 연결 시도...", wsUrl);
+    const socket = new WebSocket(wsUrl);
+
+    // (연결 성공)
+    socket.onopen = (event) => {
+        console.log("[WS] 연결 성공.");
+        // (FIX) 이제 'status'가 존재하므로 정상 작동
+        document.getElementById('status').textContent = "서버 연결 성공. QR 생성 대기 중...";
+    };
+
+    // (연결 종료)
+    socket.onclose = (event) => {
+        console.log("[WS] 연결 종료.");
+        document.getElementById('status').textContent = "서버와 연결이 끊겼습니다.";
+    };
+
+    // (오류)
+    socket.onerror = (error) => {
+        console.error("[WS] 웹소켓 오류 발생!", error);
+        document.getElementById('status').textContent = "서버 연결에 실패했습니다.";
+    };
+
+    // (메시지 수신)
+    socket.onmessage = (event) => {
+        console.log("[WS] 메시지 수신:", event.data);
+        try {
+            const msg = JSON.parse(event.data);
+
+            if (msg.type === 'signatureCompleted' && msg.url) {
+                console.log("[WS] 서명 완료 메시지 확인! PDF 로드:", msg.url);
+
+                hideQrModal();
+
+                // (FIX) 이제 'pdf-div' 등이 존재하므로 정상 작동
+                document.getElementById('status').textContent = "";
+                // document.getElementById('qrModal').style.display = 'none'; // QR 영역 숨기기
+                document.getElementById('viewer-container').style.display = 'none'; // 원본 PDF 숨기기
+                document.getElementById('pdf-div').style.display = 'block'; // 최종 PDF 영역 표시
+                document.getElementById('pdf-frame').src = msg.url; // iframe에 최종 PDF 로드
+
+                socket.close();
+            }
+        } catch (e) {
+            console.error("[WS] 수신 메시지 처리 중 오류:", e);
+        }
+    };
+
+    // (QR 모달 열기)
+    function showQrModal() {
+
+        // [!!!] 모바일 URL을 'mobileAccessUrl' (IP 기반)로 생성 [!!!]
+        const mobileSignUrl = `\${mobileAccessUrl}/sign/mobile?token=${signToken}`;
+
+        console.log("모바일 QR URL:", mobileSignUrl); // (IP 주소 확인)
+
+        const qrDiv = document.getElementById('qrcode');
+        qrDiv.innerHTML = "";
+        qrcode = new QRCode(qrDiv, { text: mobileSignUrl, width: 200, height: 200 });
+
+        document.getElementById('status').textContent = "QR 생성 완료. 스캔 대기 중...";
+        document.getElementById('qrModal').style.display = 'flex';
+    }
+
+    // (QR 모달 닫기)
+    function hideQrModal() {
+        document.getElementById('qrModal').style.display = 'none';
+    }
+</script>
+
+<%-- <%@ include file="../include/footer.jsp" %>--%>
+</body>
+</html>

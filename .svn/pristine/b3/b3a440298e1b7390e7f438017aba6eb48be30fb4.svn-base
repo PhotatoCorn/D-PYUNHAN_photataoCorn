@@ -1,0 +1,10 @@
+package kr.or.ddit.vo;
+
+import lombok.Data;
+
+@Data
+public class ContractVO {
+    private Long id;
+    private String content; // <-- 이 컬럼에 HTML이 저장됩니다.
+    private String title;
+}

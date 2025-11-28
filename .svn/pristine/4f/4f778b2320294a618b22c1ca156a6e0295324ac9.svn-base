@@ -1,0 +1,66 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<!DOCTYPE html>
+<html>
+<head>
+<title>공지 등록</title>
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script type="text/javascript">
+/* ckeditor 사용해봄 */
+ document.addEventListener("DOMContentLoaded",function(){
+	
+	 ClassicEditor
+	    .create(document.querySelector('#noticeCn'))
+	    .catch(error => {
+	      console.error('Editor error:', error);
+	    });
+ });
+</script>
+</head>
+<body>
+
+
+<%@ include file="../include/header.jsp"%>
+
+<!-- /// 타이틀 시작 /// -->
+ <div class="d-sm-flex align-items-center justify-content-between mb-4">
+     <h1 class="h3 mb-0 text-gray-800">공지 등록</h1>
+ </div>
+ <!-- /// 타이틀 끝 /// -->
+
+
+<!-- /// body 시작 /// -->
+<form action="/notice/register" method="post" enctype="multipart/form-data">
+	<div>
+		<label for="noticeSj">공지 제목</label>
+		<input id="noticeSj" type="text" name="noticeSj" required />
+	</div>
+	
+	<div>
+    <label>공지 대상</label>
+    <input type="radio" name="wnmpyNotice" value="1" checked /> 사내공지
+    <input type="radio" name="wnmpyNotice" value="0" /> 입주민공지
+	</div>
+	
+	<div>
+		<label for="noticeCn">공지 내용</label>
+		<textarea id="noticeCn" name="noticeCn"></textarea>
+	</div>
+	<div>
+        <label>첨부파일</label>
+        <input type="file" name="multipartFiles" multiple />
+    </div>
+	<div>
+		<button type="submit">등록</button>
+		<button type="button" onclick="location.href='/notice/list';">취소</button>
+	</div>
+	
+</form>
+<!-- /// body 끝 /// -->
+
+<%@ include file="../include/footer.jsp"%>
+
+</body>
+</html>

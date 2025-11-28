@@ -1,0 +1,55 @@
+package kr.or.ddit.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.DeptVO;
+import kr.or.ddit.vo.DrftDocVO;
+import kr.or.ddit.vo.DrftRefrnVO;
+import kr.or.ddit.vo.ElctrnsanctnManageVO;
+import kr.or.ddit.vo.ElctrnsanctnVO;
+import kr.or.ddit.vo.EmpVO;
+import kr.or.ddit.vo.SanctnlnVO;
+
+@Mapper
+public interface ElctrncsanctnMapper {
+
+	List<ElctrnsanctnManageVO> getElctrnsanctnManageVOList();	
+
+	DrftDocVO getDrftDocFormat(DrftDocVO drftDocVO);
+
+	List<EmpVO> getEmpVOList(EmpVO empVO);
+
+	List<DrftDocVO> getDrftDocVOList(ElctrnsanctnManageVO elctrnsanctnManageVO);
+
+	List<DeptVO> getDeptVOList(EmpVO empVO);
+
+	int postElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO);
+
+	int postSanctnln(SanctnlnVO sanctnlnVO);
+
+	int postDrftRefrn(DrftRefrnVO drftRefrnVO);
+
+	List<ElctrnsanctnVO> getElctrnsanctnVOList(Map<String, Object> map);
+
+	int getTotal(Map<String, Object> map);
+
+	List<SanctnlnVO> getSanctnlnList(int elctrnsanctnSn);
+
+	ElctrnsanctnVO getElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO);
+
+	EmpVO getEmpVO(String empId);
+
+	DrftDocVO getDrftDocVO(ElctrnsanctnVO elctrnsanctnVO);
+
+	List<DrftRefrnVO> getdrftRefrnList(int elctrnsanctnSn);
+
+	void delSanctnln(ElctrnsanctnVO elctrnsanctnVO);
+
+	void deldrftRefrn(ElctrnsanctnVO elctrnsanctnVO);
+
+	int updateElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO);
+
+}

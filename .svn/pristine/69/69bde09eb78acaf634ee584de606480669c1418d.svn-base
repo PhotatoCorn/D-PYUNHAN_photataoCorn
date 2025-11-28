@@ -1,0 +1,47 @@
+package kr.or.ddit.service.impl;
+
+import kr.or.ddit.mapper.ContractMapper;
+import kr.or.ddit.service.ContractService;
+import kr.or.ddit.vo.ContractVO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class ContractServiceImpl implements ContractService {
+
+    private final ContractMapper contractMapper;
+
+    /**
+     * DB에서 계약서 내용을 가져옵니다.
+     */
+    public String getContract(Long id) {
+        // 3. Mapper를 호출해 DTO를 받습니다.
+        ContractVO contractVO = contractMapper.getContractById(id);
+
+        if (contractVO != null) {
+            return contractVO.getContent(); // DTO에서 HTML 내용 반환
+        }
+        return ""; // 조회된 게 없으면 빈 문자열
+    }
+
+    /**
+     * CKEditor에서 받은 HTML 내용을 DB에 저장(수정)합니다.
+     */
+    public void saveContract(Long id,String htmlContent) {
+        // 4. DTO에 내용을 담아 Mapper로 전달합니다.
+        ContractVO contractVO = new ContractVO();
+        contractVO.setId(id);
+        contractVO.setContent(htmlContent);
+
+        // (ID가 이미 있으면 update, 없으면 insert 하는 로직이 보통 들어갑니다)
+        // 여기서는 예시로 update만 호출
+        contractMapper.updateContract(contractVO);
+    }
+
+    public ContractVO postContract(ContractVO contractVO) {
+        contractMapper.postContract(contractVO);
+
+        return contractVO;
+    }
+}

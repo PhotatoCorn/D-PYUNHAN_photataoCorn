@@ -1,0 +1,79 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+  <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+    <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+      <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+        <!DOCTYPE html>
+        <html>
+
+        <head>
+          <title></title>
+
+          <script type="text/javascript">
+            document.addEventListener("DOMContentLoaded", function(){
+              document.querySelectorAll(".bidPblancVORow").forEach(row =>{
+                row.addEventListener("click", function(){
+                  const bidPblancSn = this.querySelector(".bidPblancSn").value;
+                  location.href = "/bidPblanc/getBidPblanc?bidPblancSn="+bidPblancSn;
+                })
+              })
+            })
+          </script>
+        </head>
+
+        <body>
+          <%@ include file="../include/header.jsp" %>
+                <!-- /// body /// -->
+          <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">입찰 공고 목록</h3>
+              </div>
+              <!-- /.card-header -->
+              <div class="card-body">
+                <table class="table table-bordered table-hover" style="font-size: 0.9rem;">
+                  <thead>
+                     <tr>
+                          <th>순번</th>
+                          <th>입찰제목</th>
+                          <th>낙찰방법</th>
+                          <th>공고 시작일</th>
+                          <th>입찰 마감일</th>
+                          <th>보증금률</th>
+                          <th>필수 제출 서류</th>
+                        </tr>
+                  </thead>
+                  <tbody>
+                    <c:forEach var="bidPblancVO" items="${articlePage.content}">
+                        <tr class="bidPblancVORow">
+                          <td>${bidPblancVO.rnum}
+                            <input type="hidden" class="bidPblancSn" value="${bidPblancVO.bidPblancSn}"/>
+                          </td>
+                          <td>
+                            <c:if test="${bidPblancVO.bidSttus==1}">
+                            	<span class="badge badge-secondary">${bidPblancVO.bidSttusAsStr}</span>
+                            </c:if>
+                            <c:if test="${bidPblancVO.bidSttus!=1}">
+                            	<span class="badge badge-info">${bidPblancVO.bidSttusAsStr}</span>
+                            </c:if>
+                            ${bidPblancVO.bidSj}</td>
+                          <td>${bidPblancVO.scsbMthAsStr}</td>
+                          <td>
+                            <fmt:formatDate value="${bidPblancVO.pblancDt}" pattern="yyyy-MM-dd"/>                            
+                          </td>
+                          <td>
+                          	<fmt:formatDate value="${bidPblancVO.bidClosDtAsDate}" pattern="yyyy-MM-dd"/>                            
+                          </td>
+                          <td>${bidPblancVO.bidGtnRt } %</td>
+                          <td>${bidPblancVO.allRequirementsAsStr }</td>
+                        </tr>
+                        </c:forEach>
+                  </tbody>
+                </table>
+              </div>
+              <!-- /.card-body -->
+              ${articlePage.pagingAreaBorderedTable}
+            </div>
+            <!-- /// body /// -->
+            <%@ include file="../include/footer.jsp" %>
+        </body>
+
+        </html>

@@ -1,0 +1,24 @@
+package kr.or.ddit.vo;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import lombok.Data;
+
+@Data
+public class CcpyManageVO {
+	private int ccpyManageId;
+	private String ccpyCmpnyNm;
+	private String ccpyAdres;
+	private String ccpyTelno;
+	private String ccpyRprsntvNm;
+	private String ccpyBizrno;
+	private String ccpyEmail;
+	private String ccpyPassword;
+	private long fileGroupSn;
+	
+	private LocalDate ccpyOpbizDe;
+	
+	//업종 업태
+	private List<BizcndIndutyVO> bizcndIndutyVOList;
+}

@@ -1,0 +1,183 @@
+package kr.or.ddit.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import kr.or.ddit.mapper.ElctrncsanctnMapper;
+import kr.or.ddit.service.ElctrncsanctnService;
+import kr.or.ddit.vo.DeptVO;
+import kr.or.ddit.vo.DrftDocVO;
+import kr.or.ddit.vo.DrftRefrnVO;
+import kr.or.ddit.vo.ElctrnsanctnManageVO;
+import kr.or.ddit.vo.ElctrnsanctnVO;
+import kr.or.ddit.vo.EmpVO;
+import kr.or.ddit.vo.SanctnlnVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class ElctrncsanctnServiceImpl implements ElctrncsanctnService {
+
+	@Autowired
+	ElctrncsanctnMapper elctrncsanctnMapper;
+	
+	@Override
+	public List<ElctrnsanctnManageVO> getElctrnsanctnManageVOList() {
+		
+		return this.elctrncsanctnMapper.getElctrnsanctnManageVOList();
+	}
+
+	@Override
+	public DrftDocVO getDrftDocFormat(DrftDocVO drftDocVO) {
+		// TODO Auto-generated method stub
+		return this.elctrncsanctnMapper.getDrftDocFormat(drftDocVO);
+	}
+
+	@Override
+	public List<EmpVO> getEmpVOList(EmpVO empVO) {
+		
+		return this.elctrncsanctnMapper.getEmpVOList(empVO);
+	}
+
+	@Override
+	public List<DrftDocVO> getDrftDocVOList(ElctrnsanctnManageVO elctrnsanctnManageVO) {
+		// TODO Auto-generated method stub
+		return this.elctrncsanctnMapper.getDrftDocVOList(elctrnsanctnManageVO);
+	}
+
+	@Override
+	public List<DeptVO> getDeptVOList(EmpVO empVO) {
+		// TODO Auto-generated method stub
+		return this.elctrncsanctnMapper.getDeptVOList(empVO);
+		
+	}
+
+
+	@Override
+	@Transactional
+	public int postElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO, String sanctnlnList, String referenceList) {
+		int result = this.elctrncsanctnMapper.postElctrnsanctn(elctrnsanctnVO);
+		
+		int elctrnsanctnSn = elctrnsanctnVO.getElctrnsanctnSn();
+		
+		ObjectMapper mapper = new ObjectMapper();
+	    try {
+			List<SanctnlnVO> sanctnlnVOList = mapper.readValue(
+			    sanctnlnList,
+			    new TypeReference<List<SanctnlnVO>>(){});
+			
+			List<DrftRefrnVO> drftRefrnVOList = mapper.readValue(
+					referenceList,
+				    new TypeReference<List<DrftRefrnVO>>(){});
+			
+			for(int i=0; i<sanctnlnVOList.size(); i++) {
+				SanctnlnVO sanctnlnVO = sanctnlnVOList.get(i);
+				sanctnlnVO.setElctrnsanctnSn(elctrnsanctnSn);
+				if(sanctnlnVO.getSanctnOrdr()==sanctnlnVOList.size()) {
+					sanctnlnVO.setDcrbmanAt(1);
+				}		
+				result += this.elctrncsanctnMapper.postSanctnln(sanctnlnVO);
+			}
+			
+			for(DrftRefrnVO drftRefrnVO : drftRefrnVOList) {
+				drftRefrnVO.setElctrnsanctnSn(elctrnsanctnSn);
+				result += this.elctrncsanctnMapper.postDrftRefrn(drftRefrnVO);
+			}
+			
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+	    
+		return result;
+	}
+
+	@Override
+	public List<ElctrnsanctnVO> getElctrnsanctnVOList(Map<String, Object> map) {
+		
+		return this.elctrncsanctnMapper.getElctrnsanctnVOList(map);
+	}
+
+	@Override
+	public int getTotal(Map<String, Object> map) {
+		return this.elctrncsanctnMapper.getTotal(map);
+	}
+
+	@Override
+	public List<SanctnlnVO> getSanctnlnList(int elctrnsanctnSn) {
+		return this.elctrncsanctnMapper.getSanctnlnList(elctrnsanctnSn);
+	}
+
+	@Override
+	public ElctrnsanctnVO getElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO) {
+		
+		return this.elctrncsanctnMapper.getElctrnsanctn(elctrnsanctnVO);
+	}
+
+	@Override
+	public EmpVO getEmpVO(String empId) {
+	
+		return this.elctrncsanctnMapper.getEmpVO(empId);
+	}
+
+	@Override
+	public DrftDocVO getDrftDocVO(ElctrnsanctnVO elctrnsanctnVO) {
+		
+		return this.elctrncsanctnMapper.getDrftDocVO(elctrnsanctnVO);
+	}
+
+	@Override
+	public List<DrftRefrnVO> getdrftRefrnList(int elctrnsanctnSn) {
+		
+		return this.elctrncsanctnMapper.getdrftRefrnList(elctrnsanctnSn);
+	}
+
+	@Override
+	@Transactional
+	public int updateElctrnsanctn(ElctrnsanctnVO elctrnsanctnVO, String sanctnlnList, String referenceList) {
+		
+		this.elctrncsanctnMapper.delSanctnln(elctrnsanctnVO);
+		this.elctrncsanctnMapper.deldrftRefrn(elctrnsanctnVO);
+		
+		int result = this.elctrncsanctnMapper.updateElctrnsanctn(elctrnsanctnVO);
+		int elctrnsanctnSn = elctrnsanctnVO.getElctrnsanctnSn();
+		
+		ObjectMapper mapper = new ObjectMapper();
+	    try {
+			List<SanctnlnVO> sanctnlnVOList = mapper.readValue(
+			    sanctnlnList,
+			    new TypeReference<List<SanctnlnVO>>(){});
+			
+			List<DrftRefrnVO> drftRefrnVOList = mapper.readValue(
+					referenceList,
+				    new TypeReference<List<DrftRefrnVO>>(){});
+			
+			for(int i=0; i<sanctnlnVOList.size(); i++) {
+				SanctnlnVO sanctnlnVO = sanctnlnVOList.get(i);
+				sanctnlnVO.setElctrnsanctnSn(elctrnsanctnSn);
+				if(sanctnlnVO.getSanctnOrdr()==sanctnlnVOList.size()) {
+					sanctnlnVO.setDcrbmanAt(1);
+				}
+				result += this.elctrncsanctnMapper.postSanctnln(sanctnlnVO);
+			}
+			
+			for(DrftRefrnVO drftRefrnVO : drftRefrnVOList) {
+				drftRefrnVO.setElctrnsanctnSn(elctrnsanctnSn);
+				result += this.elctrncsanctnMapper.postDrftRefrn(drftRefrnVO);
+			}
+			
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+	    
+		return result;
+	}
+	
+}

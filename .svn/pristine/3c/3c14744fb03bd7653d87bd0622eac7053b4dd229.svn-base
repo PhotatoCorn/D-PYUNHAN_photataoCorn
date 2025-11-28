@@ -1,0 +1,43 @@
+package kr.or.ddit.service.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.or.ddit.mapper.SignMapper;
+import kr.or.ddit.service.SignService;
+import kr.or.ddit.vo.SignVO;
+
+@Service
+public class SignServiceImpl implements SignService {
+
+	@Autowired
+	SignMapper signMapper;
+
+	@Override
+	// selectSign empId를 기준으로 sign사진을 찾기
+	public SignVO selectSign(String empId) {
+		return this.signMapper.selectSign(empId);
+	}
+
+	@Transactional
+	@Override
+	public long ensureSignForEmp(String empId, long fileGroupSn) {
+		// 이미 있으면 바로 기존 SIGN_ID 반환
+		if (signMapper.findEmpId(empId) > 0) {
+			return signMapper.findSignIdByEmpId(empId);
+		}
+
+		// 없으면 생성 시도
+		SignVO signVO = new SignVO();
+		signVO.setEmpId(empId);
+		int inserted = signMapper.insertSign(signVO);
+		if (inserted != 1) {
+			throw new IllegalStateException("SIGN 생성 실패");
+		}
+		// vo.signId는 selectKey로 채워짐 → long 변환
+		return signVO.getSignId();
+
+	}
+
+}

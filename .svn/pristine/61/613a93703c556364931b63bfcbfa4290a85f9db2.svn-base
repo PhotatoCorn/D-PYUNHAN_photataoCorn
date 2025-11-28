@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.BdderMapper">
+	
+	<sql id="pageWhere">
+		<if test="keyword != null and keyword != ''">
+    		and (BID_PBLANC.BID_SJ like '%' || #{keyword} || '%')
+    	</if>
+	</sql>
+	
+	<sql id="where">
+		and bdder_email = #{bdderEmail}
+		and bdder_password = #{bdderPassword}
+	</sql>
+	
+	<resultMap type="bidPblancVO" id="bidPblancVOMap">
+		<result property="bidGtnRt" column="BID_GTN_RT"/>
+		<result property="cdltPresentnAt" column="CDLT_PRESENTN_AT"/>
+		<result property="acmsltproofPresentnAt" column="ACMSLTPROOF_PRESENTN_AT"/>
+		<result property="fileGroupSn" column="FILE_GROUP_SN"/>
+		<result property="sptdcAt" column="SPTDC_AT"/>
+		<result property="sptdcDt" column="SPTDC_DT"/>
+		<result property="sptdcPlace" column="SPTDC_PLACE"/>
+		<result property="bidPblancSn" column="BID_PBLANC_SN"/>
+		<result property="bidSj" column="BID_SJ"/>
+		<result property="scsbMth" column="SCSB_MTH"/>
+		<result property="bidCn" column="BID_CN"/>
+		<result property="pblancDt" column="PBLANC_DT"/>
+		<result property="bidClosDt" column="BID_CLOS_DT"/>
+		<result property="bidSttus" column="BID_STTUS"/>
+		<result property="elctrnsanctnSn" column="ELCTRNSANCTN_SN"/>
+	</resultMap>
+	
+	<resultMap type="bdderVO" id="bdderVOMap">
+		<result property="rnum" column="RNUM"/>
+		<result property="bdderPassword" column="BDDER_PASSWORD"/>
+		<result property="bidGtn" column="BID_GTN"/>
+		<result property="fileGroupSn" column="FILE_GROUP_SN"/>
+		<result property="bdderCmpnyNm" column="BDDER_CMPNY_NM"/>
+		<result property="bdderSn" column="BDDER_SN"/>
+		<result property="bdderNm" column="BDDER_NM"/>
+		<result property="bdderAdres" column="BDDER_ADRES"/>
+		<result property="bdderTelno" column="BDDER_TELNO"/>
+		<result property="bdderBizrno" column="BDDER_BIZRNO"/>
+		<result property="bdderEmail" column="BDDER_EMAIL"/>
+		<result property="bidSportDt" column="BID_SPORT_DT"/>
+		<result property="bidAmount" column="BID_AMOUNT"/>
+		<result property="bidPblancSn" column="BID_PBLANC_SN"/>
+		<result property="bidAt" column="BID_AT"/>
+		<result property="bidSlctnDt" column="BID_SLCTN_DT"/>
+		<association property="bidPblancVO" resultMap="bidPblancVOMap"></association>
+	</resultMap>
+	
+	<select id="getBidPblancVO" parameterType="int"
+		resultType="BidPblancVO">
+		SELECT *
+		FROM BID_PBLANC
+		WHERE BID_PBLANC_SN = #{bidPblancSn}
+	</select>
+
+	<insert id="postBdder" parameterType="kr.or.ddit.vo.BdderVO">
+		<selectKey resultType="int" order="BEFORE"
+			keyProperty="bdderSn">
+			select NVL(MAX(bdder_sn), 0)+1 from bdder
+		</selectKey>
+		INSERT INTO bdder (
+		bdder_sn,
+		bdder_nm,
+		bdder_adres,
+		bdder_telno,
+		bdder_bizrno,
+		bdder_email,
+		bid_sport_dt,
+		bid_amount,
+		bid_pblanc_sn,
+		bid_at,
+		bid_slctn_dt,
+		bdder_password,
+		bid_gtn,
+		file_group_sn,
+		bdder_cmpny_nm
+		)
+		VALUES (
+		#{bdderSn},
+		#{bdderNm},
+		#{bdderAdres},
+		#{bdderTelno},
+		#{bdderBizrno},
+		#{bdderEmail},
+		sysdate,
+		#{bidAmount},
+		#{bidPblancSn},
+		nullif(#{bidAt}, 0),
+		#{bidSlctnDt},
+		#{bdderPassword},
+		#{bidGtn},
+		#{fileGroupSn},
+		#{bdderCmpnyNm}
+		)
+	</insert>
+
+	<select id="getBdderEmail" parameterType="BdderVO"
+		resultType="BdderVO">
+		select 	distinct(bdder_email),
+				bdder_password
+			from bdder
+			where 1=1
+			<include refid="where"></include>
+	</select>
+
+	<select id="getMyBdderList" parameterType="hashMap" resultMap="bdderVOMap">
+		WITH T AS(
+			SELECT 	ROWNUM RNUM,
+					F.*
+			FROM
+				(select 	bdder.BDDER_SN,
+							bdder.BDDER_NM,
+							bdder.BDDER_ADRES,
+							bdder.BDDER_TELNO,
+							bdder.BDDER_BIZRNO,
+							bdder.BDDER_EMAIL,
+							bdder.BID_SPORT_DT,
+							bdder.BID_AMOUNT,
+							bdder.BID_PBLANC_SN,
+							bdder.BID_AT,
+							bdder.BID_SLCTN_DT,
+							bdder.BDDER_PASSWORD,
+							bdder.BID_GTN,
+							bdder.FILE_GROUP_SN,
+							bdder.BDDER_CMPNY_NM,
+							BID_PBLANC.bid_sj,
+							BID_PBLANC.scsb_mth,
+							BID_PBLANC.bid_cn,
+							BID_PBLANC.pblanc_dt,
+							BID_PBLANC.bid_clos_dt,
+							BID_PBLANC.bid_sttus,
+							BID_PBLANC.elctrnsanctn_sn,
+							BID_PBLANC.cdlt_presentn_at,
+							BID_PBLANC.acmsltproof_presentn_at,
+							BID_PBLANC.sptdc_at,
+							BID_PBLANC.sptdc_dt,
+							BID_PBLANC.sptdc_place,
+							BID_PBLANC.bid_gtn_rt
+					from bdder
+					left outer join BID_PBLANC on (BID_PBLANC.BID_PBLANC_SN = bdder.BID_PBLANC_SN)
+					where 1=1
+					<include refid="where"></include>
+					<include refid="pageWhere"></include>
+					order by bdder.BID_SPORT_DT desc
+				) F
+			)
+		SELECT * FROM T
+		WHERE T.RNUM BETWEEN (#{currentPage}*10)-(10-1) and (#{currentPage}*10)		
+	</select>
+	
+	<select id="getFileDetailVOList" parameterType="long" resultType="FileDetailVO">
+		 SELECT *
+		    FROM FILE_DETAIL
+		    WHERE FILE_GROUP_SN = #{fileGroupSn}
+	</select>
+</mapper>

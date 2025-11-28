@@ -1,0 +1,101 @@
+package kr.or.ddit.controller;
+
+import java.security.Principal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import kr.or.ddit.service.VoteMtrService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.VoteIemVO;
+import kr.or.ddit.vo.VoteMtrVO;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
+@Controller
+@RequestMapping("/vote")
+
+public class VoteMtrController {
+	
+	@Autowired
+	VoteMtrService voteMtrService;
+	
+	//관리자가 보는 List페이지 
+	@GetMapping("/voteMtr")
+	public String voteList(Model model,
+			@RequestParam(value = "currentPage", required = false, defaultValue = "1") int currentPage,
+			@RequestParam(value = "keyword", required = false, defaultValue = "") String keyword) {
+		// 한 화면에 보여질 행의 수
+		int size = 10;
+		// 투표리스트 목록
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("currentPage", currentPage);
+		map.put("keyword", keyword);
+
+		// 전체 행의 수*
+		int total = this.voteMtrService.getTotal(map);
+		log.info("voteList->total : " + total);
+					//detail에서 voteMtrList를 써서 voteMtr2VO로 했음
+		List<VoteMtrVO> voteMtrVOList2 = this.voteMtrService.voteList(map);
+		log.info("voteList->voteMtrVOList2 : " + voteMtrVOList2);
+
+		// 페이지네이션
+		ArticlePage<VoteMtrVO> articlePage = new ArticlePage<VoteMtrVO>(total, currentPage, size, voteMtrVOList2, keyword);
+
+		model.addAttribute("voteMtrVOList2", voteMtrVOList2);
+		model.addAttribute("articlePage", articlePage);
+		log.info("list->voteMtrVOList2 : " + voteMtrVOList2);
+		log.info("list->articlePage : " + articlePage);
+
+		return "vote/voteMtr";
+	}
+	
+	
+	@GetMapping("/voteDetail")
+	public String voteDetail(VoteMtrVO voteMtrVO, Model model) {
+		log.info("voteDetail -> voteMtrVO : {}  ",voteMtrVO);
+
+		VoteMtrVO resultVO = this.voteMtrService.voteMtrList(voteMtrVO);
+
+        model.addAttribute("voteMtrVO", resultVO);
+
+	    log.info("voteDetail-> voteMtrVO :" , voteMtrVO);
+		return "vote/voteDetail";
+	}
+	
+	
+	
+	@PreAuthorize("hasRole('ROLE_EMP')")
+	@GetMapping("/addVotePage")
+	public String addVotePage( ) {
+		
+		return "vote/addVotePage";
+	}
+	
+	
+	@PreAuthorize("hasRole('ROLE_EMP')")
+	@PostMapping("/addVote")
+	public String addVoteWithIems(@ModelAttribute VoteMtrVO voteMtrVO ,Principal principal)  {
+		
+		voteMtrVO.setEmpId(principal.getName());//empId불러오기
+		log.info("addVote-> principal : {} ", principal);
+		List<VoteIemVO> voteIemVOList = voteMtrVO.getVoteIemVOList();
+		
+		int result = this.voteMtrService.addVoteWithIems(voteMtrVO, voteMtrVO.getVoteIemVOList());
+		
+		log.info("addVote -> voteMtrVO : {} ", voteMtrVO);
+		log.info("addVote -> voteIemVOList : {} ", voteIemVOList);
+		log.info("addVote -> result : {} ", result);
+		
+		return "redirect:/vote/voteMtr";
+	}
+}

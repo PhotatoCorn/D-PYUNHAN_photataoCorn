@@ -1,0 +1,156 @@
+package kr.or.ddit.util;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.config.BeanController;
+import kr.or.ddit.mapper.FileMapper;
+import kr.or.ddit.vo.FileDetailVO;
+import kr.or.ddit.vo.FileGroupVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Controller
+@Slf4j
+public class UploadController {
+
+	@Autowired
+	private BeanController beanController;
+
+	@Autowired
+	private FileMapper fileMapper;
+
+	public long multiImageUpload(MultipartFile[] multipartFiles) {
+		long fileGroupSn = 0L;
+		int seq = 1;
+		int result = 0;
+
+		if (multipartFiles == null || multipartFiles.length == 0) {
+			log.warn("업로드 파일이 없습니다.");
+			return 0L;
+		}
+		
+		FileGroupVO fileGroupVO = new FileGroupVO();
+		result += this.fileMapper.insertFileGroup(fileGroupVO);
+		fileGroupSn = fileGroupVO.getFileGroupSn();
+		for (MultipartFile multipartFile : multipartFiles) {
+			if (multipartFile == null || multipartFile.isEmpty()) {
+				log.warn("빈 파일이 감지되어 건너뜁니다.");
+				continue;
+			}
+
+			String originalFilename = multipartFile.getOriginalFilename();
+			if (originalFilename == null || originalFilename.trim().isEmpty()) {
+				log.warn("파일명이 없는 파일이 감지되어 건너뜁니다.");
+				continue;
+			}
+
+			try {
+				File uploadPath = new File(
+					this.beanController.getUploadFolder(), 
+					this.beanController.getFolder()
+				);
+
+				if (!uploadPath.exists()) {
+					uploadPath.mkdirs();
+				}
+				
+				UUID uuid = UUID.randomUUID();
+				String uploadFileName = uuid.toString() + "_" + originalFilename;
+				File saveFile = new File(uploadPath, uploadFileName);
+
+				try {
+					multipartFile.transferTo(saveFile);
+				} catch (IllegalStateException | IOException e) {
+					log.error("파일 저장 실패: {}", originalFilename, e);
+					continue;
+				}
+				
+				String pictureUrl = "/" + this.beanController.getFolder()
+					.replace("\\", "/") + "/" + uploadFileName;
+				String diskPath = saveFile.getAbsolutePath();
+
+				FileDetailVO fileDetailVO = new FileDetailVO();
+				fileDetailVO.setFileNo(seq++);
+				fileDetailVO.setFileGroupSn(fileGroupSn);
+				fileDetailVO.setFileOrginlNm(originalFilename);
+				fileDetailVO.setFileStreNm(uploadFileName);
+				fileDetailVO.setFileStrelc(pictureUrl);
+				fileDetailVO.setFileMg(multipartFile.getSize());
+
+				String fileExtension = "";
+				int lastDotIndex = originalFilename.lastIndexOf(".");
+				if (lastDotIndex != -1 && lastDotIndex < originalFilename.length() - 1) {
+					fileExtension = originalFilename.substring(lastDotIndex + 1).toLowerCase();
+				}
+				fileDetailVO.setFileExtsn(fileExtension);
+
+				fileDetailVO.setFileMime(multipartFile.getContentType());
+				fileDetailVO.setFileFancysize(null);
+				fileDetailVO.setFileSaveDate(null);
+				fileDetailVO.setFileDowncount(0);
+				fileDetailVO.setFileAbsltStrelc(diskPath);
+				result += this.fileMapper.insertFileDetail(fileDetailVO);
+			} catch (Exception e) {
+				log.error("파일 처리 중 오류 발생: {}", originalFilename, e);
+				continue;
+			}
+		}
+
+		log.info("파일 업로드 완료. 파일 그룹 SN: {}, 저장된 파일 수: {}", fileGroupSn, result);
+		return fileGroupSn;
+	}
+
+	public String uploadFile(MultipartFile multipartFile) throws IOException {
+		if (multipartFile == null || multipartFile.isEmpty()) {
+			log.error("업로드할 파일이 없습니다.");
+			throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+		}
+		String originalFilename = multipartFile.getOriginalFilename();
+		if (originalFilename == null || originalFilename.trim().isEmpty()) {
+			log.error("파일명이 없습니다.");
+			throw new IllegalArgumentException("파일명이 없습니다.");
+		}
+		File uploadPath = new File(
+			this.beanController.getUploadFolder(), 
+			this.beanController.getFolder()
+		);
+		if (!uploadPath.exists()) {
+			uploadPath.mkdirs();
+		}		
+		String uploadFileName = UUID.randomUUID().toString() + "_" + originalFilename;
+		File saveFile = new File(uploadPath, uploadFileName);
+		try {
+			multipartFile.transferTo(saveFile);
+			log.info("파일 저장 성공: {}", uploadFileName);
+		} catch (IOException e) {
+			log.error("파일 저장 실패: {}", originalFilename, e);
+			throw e;
+		}
+		return saveFile.getAbsolutePath();
+	}
+
+	public List<FileDetailVO> getFileDetailVOList(Long fileGroupSn) {
+		if (fileGroupSn == null || fileGroupSn <= 0) {
+			log.warn("유효하지 않은 파일 그룹 SN: {}", fileGroupSn);
+			return List.of();
+		}
+		return this.fileMapper.getFileDetailVOList(fileGroupSn);
+	}
+
+	public FileDetailVO getFileDetail(long fileGroupSn, int fileNo) {
+		Map<String, Object> map = new HashMap<>();
+		map.put("fileGroupSn", fileGroupSn);
+		map.put("fileNo", fileNo);
+
+		return this.fileMapper.getFileDetail(map);
+	}
+
+}

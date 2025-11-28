@@ -1,0 +1,15 @@
+package kr.or.ddit.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.BizcndIndutyVO;
+import kr.or.ddit.vo.CcpyManageVO;
+
+@Mapper
+public interface CcpyManageMapper {
+
+	int postCcpyManageVO(CcpyManageVO ccpyManageVO);
+
+	int postbizcndIndutyVO(BizcndIndutyVO bizcndIndutyVO);
+
+}

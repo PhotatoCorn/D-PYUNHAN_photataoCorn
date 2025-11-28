@@ -1,0 +1,313 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+	<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+		<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+			<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+				<!DOCTYPE html>
+				<html>
+
+				<head>
+					<title>공고 올리기</title>
+				</head>
+
+				<style>
+					#fileList {
+						height: 250px;
+						border: 2px dashed #dee2e6;
+						border-radius: 0.25rem;
+						background-color: #f8f9fa;
+						overflow-y: auto;
+						padding: 15px;
+						margin-bottom: 15px;
+					}
+
+					.file-item {
+						display: flex;
+						align-items: center;
+						gap: 10px;
+						background-color: white;
+						border: 1px solid #dee2e6;
+						border-radius: 0.25rem;
+						padding: 10px;
+						margin-bottom: 10px;
+					}
+
+					.file-info {
+						flex: 1;
+						min-width: 0;
+					}
+
+					.file-name {
+						font-size: 14px;
+						font-weight: 500;
+						white-space: nowrap;
+						overflow: hidden;
+						text-overflow: ellipsis;
+					}
+
+					.btn-remove {
+						padding: 15;
+						color: red;
+						cursor: pointer;
+						border: none;
+						background: none;
+						font-size: 20px;
+					}
+
+					.btn-remove:hover {
+						color: red;
+						font-weight: bolder;
+					}
+				</style>
+				
+				<script>
+					document.addEventListener("DOMContentLoaded", function () {
+
+						//파일 업로드 및 드래그/드롭
+						let uploadedFiles = [];
+						const fileList = document.querySelector("#fileList");
+						const fileUpload = document.querySelector("#fileUpload");
+
+						function fover(event) {
+							event.preventDefault();
+							fileList.classList.add("bg-light");
+						}
+
+						function fleave(event) {
+							event.preventDefault();
+							fileList.classList.remove("bg-light");
+						}
+
+						function fdrop(event) {
+							event.preventDefault();
+							fileList.classList.remove("bg-light");
+
+							const dataFiles = Array.from(event.dataTransfer.files);
+							dataFiles.forEach(file => readOneFile(file));
+						}
+
+						function readOneFile(pFile) {
+							if (uploadedFiles.some(f => f.name === pFile.name && f.size === pFile.size)) {
+								alert("이미 추가된 파일입니다");
+								return;
+							}
+							pFile.fileId = Date.now() + Math.random();
+							uploadedFiles.push(pFile);
+							displayFileItem(pFile);
+						}
+
+						function displayFileItem(file) {
+							const fileItem = document.createElement("div");
+							fileItem.className = "file-item";
+							fileItem.dataset.fileId = file.fileId;
+							fileItem.innerHTML = `
+                <div class="file-info">
+                    <div class="file-name" title="\${file.name}">\${file.name}</div>
+                </div>
+                <button type="button" class="btn-remove" onclick="removeFileItem(this)">×</button>
+            `;
+							fileList.appendChild(fileItem);
+						}
+
+						window.removeFileItem = function (btn) {
+							const fileItem = btn.closest(".file-item");
+							const fileId = fileItem.dataset.fileId;
+
+							uploadedFiles = uploadedFiles.filter(f => f.fileId != fileId);
+
+							fileItem.remove();
+						};
+						fileUpload.addEventListener("change", function (e) {
+							Array.from(e.target.files).forEach(file => readOneFile(file));
+						});
+
+						window.fover = fover;
+						window.fleave = fleave;
+						window.fdrop = fdrop;
+
+						//현장 설명 일시 display
+						document.querySelector("#sptdc1").addEventListener("change", function () {
+							if (this.checked) {
+								document.querySelector("#sptdcAtDisplay").style.display = "block";
+							}
+						});
+
+						document.querySelector("#sptdc0").addEventListener("change", function () {
+							if (this.checked) {
+								document.querySelector("#sptdcAtDisplay").style.display = "none";
+							}
+						});
+
+						document.querySelector("#postBidPblancVOForm").addEventListener("submit", function (e) {
+							e.preventDefault();
+
+							const formData = new FormData();
+							
+							document.querySelectorAll(".bidPblancVO").forEach(elem => {
+								let name = elem.getAttribute("name");
+								let value = null;
+
+								if (elem.type === "radio") {
+									if (elem.checked) {
+										value = elem.value;
+										formData.append(name, value);
+										console.log("check : name, value => " + name + ", " + value);
+									}
+								} else {
+									value = elem.value;
+									formData.append(name, value);
+									console.log("check : name, value => " + name + ", " + value);
+								}
+							})
+
+							uploadedFiles.forEach(file => {
+								formData.append("uploadFiles", file);
+							});
+							// action="/bidPblanc/postBidPblanc" method="post"
+							fetch("/bidPblanc/postBidPblanc", {
+								method: "POST",
+								body: formData
+							})
+								.then(response => {
+									if (response.ok) {
+										window.location.href = "/bidPblanc/getBidPblancList";
+										console.log("성공")
+									} else {
+										console.log("서버 오류")
+									}
+								})
+								.catch(error => console.log("check : error => ", error));
+						});
+					});
+				</script>
+
+				<body>
+					<%@ include file="../include/header.jsp" %>
+
+						<div class="jumbotron">
+							<div class="container">
+								<h1 class="display-3">공고 올리기</h1>
+							</div>
+						</div>
+
+						<form id="postBidPblancVOForm">
+							<div class="card card-primary">
+								<div class="card-header">
+									<h3 class="card-title">입찰 공고 등록</h3>
+								</div>
+
+								<div class="card-body">
+									<div class="form-group">
+										<label for="bidSj">입찰 제목</label>
+										<input type="text" id="bidSj" name="bidSj" class="form-control bidPblancVO">
+									</div>
+									<div class="form-group">
+										<label for="scsbMth">낙찰 방법</label> <select id="scsbMth" name="scsbMth"
+											class="form-control custom-select bidPblancVO">
+											<option selected disabled>Select one</option>
+											<option value="0">적격 심사</option>
+											<option value="1">최저 낙찰</option>
+											<option value="2">최고 낙찰</option>
+										</select>
+									</div>
+
+									<div class="form-group">
+										<label for="cdltPresentnAt">신용평가등급확인서 제출여부</label>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio"
+												name="cdltPresentnAt" id="cdlt1" value="1"> <label
+												class="form-check-label" for="cdlt1">필수</label>
+										</div>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio"
+												name="cdltPresentnAt" id="cdlt0" value="0" checked> <label
+												class="form-check-label" for="cdlt0">임의</label>
+										</div>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio"
+												name="cdltPresentnAt" id="cdlt2" value="2"> <label
+												class="form-check-label" for="cdlt2">해당 없음</label>
+										</div>
+									</div>
+
+									<div class="form-group">
+										<label for="acmsltproofPresentnAt">관리 실정증명서 제출여부</label>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio"
+												name="acmsltproofPresentnAt" id="acms1" value="1"> <label
+												class="form-check-label" for="acms1">필수</label>
+										</div>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio"
+												name="acmsltproofPresentnAt" id="acms0" value="0" checked>
+											<label class="form-check-label" for="acms0">임의</label>
+										</div>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio"
+												name="acmsltproofPresentnAt" id="acms2" value="2"> <label
+												class="form-check-label" for="acms2">해당없음</label>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="bidSj">입찰 보증금 %</label>
+										<input type="number" id="bidGtnRt" name="bidGtnRt" 
+										value="5" min="5" max="10"
+										class="form-control bidPblancVO">
+									</div>
+
+									<div class="form-group">
+										<label for="sptdcAt">현장 설명</label>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio" name="sptdcAt"
+												id="sptdc1" value="1"> <label class="form-check-label"
+												for="sptdc1">여</label>
+										</div>
+										<div class="form-check">
+											<input class="form-check-input bidPblancVO" type="radio" name="sptdcAt"
+												id="sptdc0" value="0" checked> <label class="form-check-label"
+												for="sptdc0">부</label>
+										</div>
+									</div>
+									<div id="sptdcAtDisplay" style="display: none;">
+										<div class="form-group">
+											<label for="sptdcDt">현장 설명 일시</label> <input type="datetime-local"
+												id="sptdcDt" name="sptdcDt" class="form-control bidPblancVO">
+										</div>
+
+										<div class="form-group">
+											<label for="sptdcPlace">현장 설명 장소</label> <input type="text" id="sptdcPlace"
+												name="sptdcPlace" class="form-control bidPblancVO">
+										</div>
+									</div>
+
+									<div class="form-group">
+										<label for="bidClosDt">입찰 마감일</label> <input type="datetime-local"
+											id="bidClosDt" name="bidClosDt" class="form-control bidPblancVO">
+									</div>
+
+									<div class="form-group">
+										<label for="bidCn">입찰 내용</label>
+										<textarea id="bidCn" name="bidCn" class="form-control bidPblancVO"
+											rows="4"></textarea>
+									</div>
+
+									<div class="form-group">
+										<label for="fileUpload"> <i class="fas fa-file-upload"></i>
+											파일 첨부
+										</label>
+										<div id="fileList" ondragover="fover(event)" ondragleave="fleave(event)"
+											ondrop="fdrop(event)" style="cursor: pointer;" title="파일을 여기에 드래그하세요"></div>
+										<div class="custom-file">
+											<input type="file" class="custom-file-input" id="fileUpload"
+												name="uploadFiles" multiple> <label class="custom-file-label"
+												for="fileUpload">파일 선택</label>
+										</div>
+									</div>
+								</div>
+							</div>
+							<button type="submit" class="btn btn-primary">공고 등록</button>
+						</form>
+
+						<%@ include file="../include/footer.jsp" %>
+				</body>
+
+				</html>

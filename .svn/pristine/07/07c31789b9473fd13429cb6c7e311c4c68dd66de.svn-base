@@ -1,0 +1,37 @@
+spring.application.name=RestFulCrud
+
+#application.properties에 쓸 수 있는 key=value 값은 아래 url을  참조하장
+#https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html
+
+# debug 로그로 설정
+logging.level.kr.or.ddit=debug
+# 서버 포트 변경
+server.port=8020
+
+# view resolver 접두어, 접미사 설정
+spring.mvc.view.prefix=/WEB-INF/views/
+spring.mvc.view.suffix=.jsp
+
+spring.datasource.url=jdbc:oracle:thin:@112.220.114.131:1521
+spring.datasource.username=team2_202505F
+spring.datasource.password=java
+
+mybatis.configuration.map-underscore-to-camel-case=true
+mybatis.configuration.jdbc-type-for-null=varchar
+mybatis.type-aliases-package=kr.or.ddit.vo
+mybatis.mapper-locations=classpath:mybatis/mapper/*-Mapper.xml
+
+#사업자등록증
+naver.ocr.secret-key=UFRla1F0Q0tBaWFUTFhoeGlsZFduRlBFS01JRW1Rc0c=
+naver.ocr.invoke-url=https://ebd2oxdgnm.apigw.ntruss.com/custom/v1/47413/8061e1728dcf93798030b1b0184c5f06e2c4ec28bdfe1d118613ce0c9a7c8183/infer
+naver.ocr.domain-name=dreamneer
+
+# 카카오톡 토큰
+kakao.access.token=P-CZP4BGnEGjcK5d89xbehwWN6EWBr9oAAAAAQoXAc8AAAGaTajp0yJyl_dg0lnq
+
+
+# 아래도 파일업로드 용량설정이당 그냥 참고하장
+# default 128K
+#spring.servlet.multipart.max-file-size=10MB
+#spring.servlet.multipart.max-request-size=12MB
+#spring.servlet.multipart.file-size-threshold=12MB

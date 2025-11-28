@@ -1,0 +1,21 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<%@ include file="../include/header.jsp" %>
+
+<script type="text/javascript" src="/js/jquery-3.6.0.js"></script>
+
+<h2>📤 관리비 엑셀 업로드</h2>
+
+<form action="/managect/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xlsx,.xls" required />
+    <button type="submit">업로드</button>
+</form>
+
+<br/>
+<p style="color:blue;">
+    ${message}
+</p>
+
+<%@ include file="../include/footer.jsp" %>

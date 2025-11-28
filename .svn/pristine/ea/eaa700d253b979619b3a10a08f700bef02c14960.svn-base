@@ -1,0 +1,66 @@
+package kr.or.ddit.service.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.mapper.FxMapper;
+import kr.or.ddit.service.FxService;
+import kr.or.ddit.vo.EmpVO;
+import kr.or.ddit.vo.FxVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class FxServiceImpl implements FxService {
+
+	@Autowired
+	FxMapper fxMapper;
+
+	
+	//일정조회
+	@Override
+	public List<FxVO> list(String start, String end) {
+		
+		Map<String,Object> map = new HashMap<>();
+		
+		map.put("fxBeginDt",start);
+		map.put("fxEndDt", end);
+		
+		log.info("map : {}",map);
+		
+		return fxMapper.list(map);
+	}
+	
+	//일정 등록
+	@Override
+	public int insert(FxVO fxVO) {
+		return this.fxMapper.insert(fxVO);
+	}
+
+	//일정 수정
+	@Override
+	public int modify(FxVO fxVO) {
+		return this.fxMapper.modify(fxVO);
+	}
+
+	//시설관리 리스트 일정 등록
+	@Override
+	public int fcltyschdulregiser(FxVO fxVO) {
+		return this.fxMapper.fcltyschdulregiser(fxVO);
+	}
+
+	//일정 등록 시 emp 전체 목록 조회해오기
+	@Override
+	public List<EmpVO> getEmpList() {
+		return this.fxMapper.getEmpList();
+	}
+
+
+	
+	
+	
+}

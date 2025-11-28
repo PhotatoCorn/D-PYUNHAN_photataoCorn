@@ -1,0 +1,192 @@
+package kr.or.ddit.util.movingAvgStd;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Component;
+
+/**
+ * 이동평균 & 표준편차 기반 이상치 탐지 분석 모듈.
+ * 
+ * <p>
+ * [주요 목적]
+ * - 과거의 사용량 데이터를 기반으로 요일별 평균 및 표준편차를 계산
+ * - 실시간 신규 검침 데이터가 주어졌을 때, 해당 요일의 통계 기준으로 Z-Score를 산출하여
+ *   평상시보다 사용량이 비정상적으로 적거나 많은 경우 이상치(Anomaly)로 탐지.
+ * 
+ * [적용 시나리오]
+ * - 각 세대별 검침량(전기, 가스, 수도 등)을 실시간으로 분석하여
+ *   사용량 급증/급감 세대를 자동으로 감지하고 알림 기능에 활용.
+ * 
+ * [기법 요약]
+ * - 이동평균(moving average): 최근 N주(week) 간의 데이터를 기준으로 계산
+ * - 표준편차(standard deviation): 평균값으로부터 데이터의 흩어진 정도를 나타냄
+ * - Z-score = (현재값 - 평균) / 표준편차
+ * - Z-score가 임계값(Z_SCORE_THRESHOLD, 기본 2.5)을 초과하면 '이상치'로 판단
+ */
+@Component
+public class MovingAvgStdAnalysis {
+    
+    // Z-score 임계값 (이보다 크면 이상치로 간주)
+    private static final double Z_SCORE_THRESHOLD = 2.5;
+    
+    // 통계 계산을 신뢰할 수 있는 최소 데이터 수
+    private static final int MIN_DATA_POINTS = 2;
+    
+    /**
+     * 요일별 데이터를 저장하는 내부 클래스.
+     * 각 요일마다 평균(mean), 표준편차(stdDev), 값 리스트(values)와 데이터 개수를 관리.
+     */
+    private static class TimeSlotStats {
+        double mean;
+        double stdDev;
+        List<Double> values;
+        int dataPoints; 
+
+        TimeSlotStats() {
+            this.values = new ArrayList<>();
+            this.dataPoints = 0;
+        }
+        
+        // 데이터 리스트 기반으로 평균과 표준편차를 갱신
+        void recalculate() {
+            this.mean = calculateMean(values);
+            this.stdDev = calculateStdDev(values, mean);
+            this.dataPoints = values.size();
+        }
+
+        // 데이터가 충분히 있는지 판단
+        boolean isReliable() {
+            return dataPoints >= MIN_DATA_POINTS;
+        }
+    }
+
+    /**
+     * 하이브리드 실시간 이상치 탐지 메서드.
+     * 
+     * @param historicalData 과거 사용량 데이터 (통계학적 기준)
+     * @param newData 새로 들어온 실시간 데이터 (분석 대상)
+     * @param movingAverageDays 이동평균 기준 기간(주 단위)
+     * @return 분석 결과가 추가된 newData 리스트 반환
+     */
+    public List<MovingAvgStdPoint> detectAnomalyHybridRealTime(
+            List<MovingAvgStdPoint> historicalData,
+            List<MovingAvgStdPoint> newData,
+            int movingAverageDays) { // 예: movingAverageDays = 4 → 최근 4주(약 1개월) 기준
+        
+        // 1. 과거 데이터를 기반으로 요일별 통계 정보 생성
+        Map<Integer, TimeSlotStats> dayOfWeekStats = buildDayOfWeekStats(
+            historicalData, movingAverageDays);
+        
+        // 2. 신규 데이터 순회하며 이상치 탐지 수행
+        for (MovingAvgStdPoint newPoint : newData) {
+            // 요일 인덱스 (일요일=0, 월요일=1, ...)
+            int dayOfWeek = newPoint.getDate().getDayOfWeek().getValue() % 7;
+            TimeSlotStats stats = dayOfWeekStats.get(dayOfWeek);
+            
+            if (stats == null) {
+                // 해당 요일의 과거 데이터가 전혀 없는 경우
+                newPoint.setAnomaly(false);
+                newPoint.setAnomalyScore(0.0);
+                newPoint.setAnalysisStatus("NO_DATA");
+            } else if (!stats.isReliable()) {
+                // 데이터가 너무 적어서 의미 있는 통계가 불가능할 때
+                newPoint.setAnomaly(false);
+                newPoint.setAnomalyScore(0.0);
+                newPoint.setAnalysisStatus("INSUFFICIENT_DATA");
+            } else {
+                // Z-score 계산: 평균으로부터 얼마나 벗어났는지를 측정
+                double zScore = Math.abs((newPoint.getUsgqty() - stats.mean) 
+                    / (stats.stdDev + 1e-10)); // 0으로 나누기 방지
+                
+                // 이상 점수 계산 (0~1 범위로 정규화)
+                newPoint.setAnomalyScore(Math.min(zScore / Z_SCORE_THRESHOLD, 1.0));
+                
+                if (zScore > Z_SCORE_THRESHOLD) {
+                    // 임계값 초과 → 이상치 판단
+                    newPoint.setAnomaly(true);
+                    newPoint.setAnalysisStatus("ANALYZED_ANOMALY");
+                } else {
+                    // 정상 범위 내 → 정상치 판단
+                    newPoint.setAnomaly(false);
+                    newPoint.setAnalysisStatus("ANALYZED_NORMAL");
+                }
+            }
+            
+            // 3. 분석이 끝난 새로운 값을 통계에 반영(실시간 학습 기반)
+            if (stats != null) {
+                stats.values.add(newPoint.getUsgqty());
+                
+                // 이동평균 대상 기간을 초과하면 가장 오래된 값 제거
+                if (stats.values.size() > movingAverageDays * 7) {
+                    stats.values.remove(0);
+                }
+                stats.recalculate();
+            } else {
+                // 새로운 요일 데이터 등장 시 새로 등록
+                TimeSlotStats newStats = new TimeSlotStats();
+                newStats.values.add(newPoint.getUsgqty());
+                newStats.recalculate();
+                dayOfWeekStats.put(dayOfWeek, newStats);
+            }
+        }
+        
+        return newData;
+    }
+    
+    /**
+     * 요일별 통계 데이터를 구축.
+     * - 과거 사용 데이터를 날짜순으로 정렬 후,
+     *   요일별 리스트로 그룹화한다.
+     * - 각 요일당 최근 N주(movingAverageDays * 7일)의 데이터만 유지.
+     */
+    private Map<Integer, TimeSlotStats> buildDayOfWeekStats(
+            List<MovingAvgStdPoint> readings, int movingAverageDays) {
+        
+        // 날짜순 정렬
+        List<MovingAvgStdPoint> sortedReadings = new ArrayList<>(readings);
+        sortedReadings.sort((r1, r2) -> r1.getDate().compareTo(r2.getDate()));
+        
+        Map<Integer, TimeSlotStats> dayOfWeekStats = new HashMap<>();
+        
+        // 요일별 데이터 분류
+        for (MovingAvgStdPoint point : sortedReadings) {
+            int dayOfWeek = point.getDate().getDayOfWeek().getValue() % 7;
+            TimeSlotStats stats = dayOfWeekStats.computeIfAbsent(dayOfWeek, 
+                k -> new TimeSlotStats());
+            stats.values.add(point.getUsgqty());
+        }
+        
+        // 각 요일별로 이동평균 기간만큼의 데이터만 유지하고 통계 갱신
+        for (TimeSlotStats stats : dayOfWeekStats.values()) {
+            if (stats.values.size() > movingAverageDays * 7) {
+                stats.values = stats.values.subList(
+                    stats.values.size() - movingAverageDays * 7,
+                    stats.values.size()
+                );
+            }
+            stats.recalculate();
+        }
+        
+        return dayOfWeekStats;
+    }
+    
+    // 리스트의 평균값 계산
+    private static double calculateMean(List<Double> values) {
+        return values.stream()
+            .mapToDouble(Double::doubleValue)
+            .average()
+            .orElse(0.0);
+    }
+    
+    // 표준편차 계산 (표준편차 = √(평균제곱편차))
+    private static double calculateStdDev(List<Double> values, double mean) {
+        double variance = values.stream()
+            .mapToDouble(v -> Math.pow(v - mean, 2))
+            .average()
+            .orElse(0.0);
+        return Math.sqrt(variance);
+    }
+}

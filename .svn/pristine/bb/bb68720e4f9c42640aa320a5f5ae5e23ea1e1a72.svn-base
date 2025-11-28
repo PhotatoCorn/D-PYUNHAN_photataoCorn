@@ -1,0 +1,32 @@
+package kr.or.ddit.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import kr.or.ddit.vo.FxVO;
+
+@Mapper
+public interface FxMapper {
+
+	
+	//일정 조회
+	public List<FxVO> list(Map<String, Object> map);
+	
+	//일정 등록
+	public int insert(FxVO fxVO);
+
+	//일정 수정
+	public int modify(FxVO fxVO);
+
+	//시설관리리스트 일정 등록
+	public int fcltyschdulregiser(FxVO fxVO);
+
+	//시설관리리스트에서 일정등록 여부 확인
+	public int getFxcount(int manageSn);
+
+
+
+}

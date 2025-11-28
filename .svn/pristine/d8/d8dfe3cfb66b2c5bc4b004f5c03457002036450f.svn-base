@@ -1,0 +1,24 @@
+package kr.or.ddit.vo;
+
+import java.util.Date;
+
+import lombok.Data;
+
+@Data
+public class SanctnlnVO {
+	private int sanctnlnId;
+	private int sanctnOrdr;
+	private int sanctnSttus;
+	private Date sanctnDt;
+	private String returnPrvonsh;
+	private int elctrnsanctnSn;
+	private String empId;
+	private int dcrbmanAt;
+	
+	//결재자
+	private EmpVO empVO;
+	
+	public static final int sttsPnd = 0; // 미결
+    public static final int sttsApr = 1; // 결재함
+    public static final int sttsRej = 2; // 반려
+}

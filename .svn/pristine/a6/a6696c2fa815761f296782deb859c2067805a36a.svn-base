@@ -1,0 +1,66 @@
+package kr.or.ddit.vo;
+
+import java.util.Date;
+import java.util.List;
+
+import lombok.Data;
+
+@Data
+public class ElctrnsanctnVO {
+	
+	private int rnum;
+	private String drftSj;
+	private int drftTmprstre;
+	private int elctrnsanctnSn;
+	private String empId;
+	private Date drftDt;
+	private Date creatDt;
+	private Date updtDt;
+	
+	private String drftCn;
+	private int upperElctrnsanctnId;
+	private int bkmkSanctnlnId;
+	private int fileGroupSn;
+	
+	//임시저장 여부
+	public String getDrftTmprstreStts() {
+		if(drftTmprstre > 0) {
+			return "임시저장";
+		}else {
+			return "기안완료";
+		}
+	}
+	
+	
+	//결재선 리스트
+	private List<SanctnlnVO> sanctnlnVOList;
+	
+	public String getTotSanctnStts() {
+		if (sanctnlnVOList == null || sanctnlnVOList.isEmpty()) {
+	        return "미결";
+	    }
+		
+		long approveCnt = sanctnlnVOList.stream().filter(s -> s.getSanctnSttus() == SanctnlnVO.sttsApr).count();
+		long rejectCnt = sanctnlnVOList.stream().filter(s -> s.getSanctnSttus() == SanctnlnVO.sttsRej).count();
+		
+		if(rejectCnt > 0) {
+			return "반려";
+		}
+		if(approveCnt == sanctnlnVOList.size()) {
+			return "결재 완료";
+		}
+		if(approveCnt > 0) {
+			return "진행중";
+		}
+		return "미결";
+	}
+	
+	//재상신용 전자결재
+	private ElctrnsanctnVO elctrnsanctnVO;
+	
+	// 분류 코드
+	private int drftDocId;
+	private int elctrnsanctnManageId;	
+	private DrftDocVO drftDocVO;
+	
+}

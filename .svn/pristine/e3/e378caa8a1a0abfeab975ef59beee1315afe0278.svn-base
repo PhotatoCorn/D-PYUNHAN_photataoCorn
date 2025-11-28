@@ -1,0 +1,21 @@
+package kr.or.ddit.service.impl;
+
+import kr.or.ddit.mapper.MtinspMapper;
+import kr.or.ddit.service.MtinspService;
+import kr.or.ddit.vo.MtinspVO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class MtinspServiceImpl implements MtinspService {
+    private final MtinspMapper mtinspMapper;
+
+    @Override
+    public List<MtinspVO> getUsageHistory(Map<String, Object> searchParams) {
+        return mtinspMapper.getUsageHistory(searchParams);
+    }
+}

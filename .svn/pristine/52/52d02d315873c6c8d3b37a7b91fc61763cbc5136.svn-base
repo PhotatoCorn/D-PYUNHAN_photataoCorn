@@ -1,0 +1,14 @@
+package kr.or.ddit.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.EmpVO;
+
+//계정, 로그인 관련 쿼리 실행
+@Mapper
+public interface EmpMapper {
+	
+	// 사용자 정보를 가져옴(로그인) -> select
+	public EmpVO findByEmpId(String empId);
+
+}

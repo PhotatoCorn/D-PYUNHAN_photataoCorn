@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.MberMapper">
+
+    <!-- 승인 대기 회원 목록 -->
+	<select id="selectPendingMembers" resultType="kr.or.ddit.vo.MberVO">
+	    SELECT 
+	        m.MBER_ID,
+	        m.MBER_NM,
+	        m.TELNO,
+	        m.EMAIL,
+	        m.MBER_TY,
+	        m.ENABLED,
+	        hmm.HSHLD_ID,
+	        h.APTCMPL,
+	        h.HO,
+	        h.MVN_DE
+	    FROM MBER m
+	    JOIN AUTHOR a 
+	        ON m.MBER_ID = a.MBER_ID
+	    LEFT JOIN HSHLD_MBER_MANAGE hmm 
+	        ON m.MBER_ID = hmm.MBER_ID
+	    LEFT JOIN HSHLD h 
+	        ON hmm.HSHLD_ID = h.HSHLD_ID
+	    WHERE m.ENABLED = '0' 
+	      AND a.AUTHOR_ID = 'GUEST'
+	    ORDER BY m.MBER_ID
+	</select>
+
+    <!-- 승인 처리 -->
+    <update id="approveMember" parameterType="String">
+        UPDATE MBER
+        SET ENABLED = '1'
+        WHERE MBER_ID = #{mberId}
+    </update>
+
+    <!-- 기존 ROLE_GUEST 삭제 -->
+    <delete id="deleteGuestRole" parameterType="String">
+        DELETE FROM AUTHOR
+        WHERE MBER_ID = #{mberId} AND AUTHOR_ID = 'GUEST'
+    </delete>
+
+    <!-- ROLE_MBER 추가 -->
+    <insert id="insertMberRole" parameterType="String">
+        INSERT INTO AUTHOR (MBER_ID, AUTHOR_ID)
+        VALUES (#{mberId}, 'ROLE_MBER')
+    </insert>
+
+	<!--  회원 상세보기 -->
+<select id="selectMemberDetail" parameterType="String" resultType="kr.or.ddit.vo.MberVO">
+	SELECT 
+	    M.MBER_ID,
+	    M.MBER_NM,
+	    M.TELNO,
+	    M.EMAIL,
+	    M.MBER_TY,
+	    M.BRTHDY,
+	    M.ENABLED,
+	    H.HSHLD_ID,
+	    H.ADRES,
+	    H.APTCMPL,
+	    H.HO,
+	    H.CMMNTY_USE_AT,
+	    H.RESIDESTTUS,
+	    H.MVN_DE
+	FROM HSHLD_MBER_MANAGE HM
+	JOIN MBER M ON HM.MBER_ID = M.MBER_ID
+	JOIN HSHLD H ON HM.HSHLD_ID = H.HSHLD_ID
+	WHERE M.MBER_ID = #{mberId}
+
+</select>
+
+
+
+</mapper>

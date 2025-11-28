@@ -1,0 +1,12 @@
+package kr.or.ddit.mapper;
+
+import kr.or.ddit.vo.ContractVO;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface ContractMapper {
+    ContractVO getContractById(Long id);
+    void updateContract(ContractVO contractVO);
+
+    int postContract(ContractVO form);
+}

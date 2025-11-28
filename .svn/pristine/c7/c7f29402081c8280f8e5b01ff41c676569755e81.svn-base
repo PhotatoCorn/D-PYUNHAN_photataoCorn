@@ -1,0 +1,31 @@
+package kr.or.ddit.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import kr.or.ddit.vo.NtcnVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RestController
+public class NtcnController {
+
+	@Autowired
+	SimpMessagingTemplate simpMessagingTemplate;
+
+	// 수신자
+	@PostMapping("/ntcn/send")
+	public void send(@RequestBody NtcnVO ntcnVO) {
+		String rcverId = ntcnVO.getRcverId();
+
+		// 단일 토픽 구조
+		String destination = "/topic/ntcn/" + rcverId;
+
+		simpMessagingTemplate.convertAndSend(destination, ntcnVO);
+		log.info("[SEND] WebSocket 발행 성공 → 토픽: {}", destination);
+	}
+
+}

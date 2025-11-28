@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.ddit.mapper.SignMapper">
+	<!-- SignVO -->
+	<resultMap type="signVO" id="signMap">
+		<result property="signId" column="SIGN_ID"/>
+		<result property="empId" column="EMP_ID"/>
+		<result property="fileGroupSn" column="FILE_GROUP_SN"/>	
+		<association property="fileDetailVO" resultMap="fileMap"></association>	
+	</resultMap>
+	<!-- fileDetailMap -->
+	<resultMap type="kr.or.ddit.vo.FileDetailVO" id="fileMap">
+		<result property="fileStreNm" column="FILE_STRE_NM"/>
+		<result property="fileStrelc" column="FILE_STRELC"/>
+		<result property="fileMg" column="FILE_MG"/>
+		<result property="fileExtsn" column="FILE_EXTSN"/>
+		<result property="fileMime" column="FILE_MIME"/>
+		<result property="fileFancysize" column="FILE_FANCYSIZE"/>
+		<result property="fileSaveDate" column="FILE_SAVE_DATE"/>
+		<result property="fileDowncount" column="FILE_DOWNCOUNT"/>
+	</resultMap>
+	<!-- empId를 기준으로 FILE_STRELC 가져오기 -->
+   <select id="selectSign" parameterType="string" resultMap="signMap">
+		SELECT
+		    A.emp_id
+		   , B.SIGN_ID
+		   , C.FILE_GROUP_SN, C.FILE_STRELC    
+		FROM EMP A 
+		LEFT OUTER JOIN SIGN B
+		             ON(A.EMP_ID = B.EMP_ID)
+		LEFT OUTER JOIN FILE_DETAIL C
+		             ON(B.FILE_GROUP_SN = C.FILE_GROUP_SN)
+		    
+		WHERE A.EMP_ID = #{empId}
+   </select>
+   
+   
+   
+   
+   
+<!-- SIGNID를 없으면 생성하는 버튼을 위한 로직 --> 
+<!-- EMP_ID로 이미 SIGN이 있는지 -->
+  <select id="findEmpId" parameterType="string" resultType="int">
+    SELECT COUNT(1)
+    FROM SIGN
+    WHERE EMP_ID = #{empId}
+  </select>
+
+  <!-- 있으면 해당 SIGN_ID 조회 -->
+  <select id="findSignIdByEmpId" parameterType="string" resultType="long">
+    SELECT SIGN_ID
+    FROM SIGN
+    WHERE EMP_ID = #{empId}
+  </select>
+
+  <!-- 새 SIGN 생성 -->
+  <insert id="insertSign" parameterType="kr.or.ddit.vo.SignVO">
+    <selectKey keyProperty="signId" resultType="int" order="BEFORE">
+      SELECT NVL(MAX(SIGN_ID), 0) + 1 FROM SIGN
+    </selectKey>
+    INSERT INTO SIGN (
+        SIGN_ID,
+        EMP_ID,
+        FILE_GROUP_SN
+    ) VALUES (
+        #{signId},
+        #{empId},
+        #{fileGroupSn}
+    )
+  </insert>
+<!-- SIGNID를 없으면 생성하는 버튼을 위한 로직 --> 
+   
+   
+   
+<update id="empSignEdit" parameterType="signVO">
+  UPDATE SIGN
+  set
+  FILE_GROUP_SN = #{fileGroupSn}
+  WHERE SIGN_ID = #{signId}
+ 	AND  EMP_ID = #{empId}
+</update>
+   	
+   
+
+
+
+
+
+
+</mapper>

@@ -1,0 +1,89 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+
+<%@ include file="../include/header.jsp"%>
+
+<section class="content">
+	<div class="container-fluid">
+		<!-- LINE CHART -->
+		<div class="card card-info">
+			<div class="card-header">
+				<h3 class="card-title">Line Chart</h3>
+
+				<div class="card-tools">
+					<button type="button" class="btn btn-tool"
+						data-card-widget="collapse">
+						<i class="fas fa-minus"></i>
+					</button>
+					<button type="button" class="btn btn-tool"
+						data-card-widget="remove">
+						<i class="fas fa-times"></i>
+					</button>
+				</div>
+			</div>
+			<div class="card-body">
+				<div class="chart">
+					<div id="lineChart"
+						style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;">
+						<div class="uplot u-hz">
+							<div class="u-wrap" style="width: 450px; height: 250px;">
+								<div class="u-under"
+									style="left: 50px; top: 17px; width: 375px; height: 183px;"></div>
+								<canvas width="405" height="225"></canvas>
+								<div class="u-over"
+									style="left: 50px; top: 17px; width: 375px; height: 183px;">
+									<div class="u-cursor-x u-off"
+										style="transform: translate(-10px, 0px);"></div>
+									<div class="u-cursor-y u-off"
+										style="transform: translate(0px, -10px);"></div>
+									<div class="u-select"
+										style="left: 0px; width: 0px; top: 0px; height: 0px;"></div>
+									<div class="u-cursor-pt u-off"
+										style="width: 8.2px; height: 8.2px; margin-left: -4.1px; margin-top: -4.1px; transform: translate(-10px, -10px); background: rgb(60, 141, 188); border-color: rgb(60, 141, 188);"></div>
+									<div class="u-cursor-pt u-off"
+										style="width: 8.2px; height: 8.2px; margin-left: -4.1px; margin-top: -4.1px; transform: translate(-10px, -10px); background: rgb(193, 199, 209); border-color: rgb(193, 199, 209);"></div>
+								</div>
+								<div class="u-axis"
+									style="top: 200px; height: 50px; left: 50px; width: 375px;"></div>
+								<div class="u-axis"
+									style="left: 0px; width: 50px; top: 17px; height: 183px;"></div>
+							</div>
+							<table class="u-legend u-inline u-live">
+								<tr class="u-series">
+									<th><div class="u-marker"></div>
+										<div class="u-label">Value</div></th>
+									<td class="u-value">--</td>
+								</tr>
+								<tr class="u-series">
+									<th><div class="u-marker"
+											style="border: 2px solid rgb(60, 141, 188); background: transparent;"></div>
+										<div class="u-label">Value</div></th>
+									<td class="u-value">--</td>
+								</tr>
+								<tr class="u-series">
+									<th><div class="u-marker"
+											style="border: 2px solid rgb(193, 199, 209); background: transparent;"></div>
+										<div class="u-label">Value</div></th>
+									<td class="u-value">--</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.card-body -->
+		</div>
+		<!-- /.card -->
+	</div>
+	<button id="predict">
+		예측
+	</button>
+	<!-- /.container-fluid -->
+</section>
+<!-- ///// content 끝 ///// -->
+<script>
+	
+</script>
+
+<%@ include file="../include/footer.jsp"%>

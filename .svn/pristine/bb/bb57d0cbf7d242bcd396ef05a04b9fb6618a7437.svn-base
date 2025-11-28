@@ -1,0 +1,259 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+
+<!DOCTYPE html>
+<html lang="ko">
+<!-- /// header 시작  -->
+<%@ include file="../include/header.jsp"%>
+<!-- /// header 끝 /// -->
+<!-- body시작은 header 에서부터  -->
+
+
+<%-- ${emp2VO} --%>
+<h2>${emp2VO.nm}님안녕하세요</h2>
+<th>직원사진</th>
+<td>프로필
+
+	<div id="imgPreview" style="width: 50%;"></div>
+<td><li>개발용FILE_GROUP_SN: ${emp2VO.fileGroupSn}</li>
+<td><c:forEach var="myImg"
+		items="${emp2VO.empFileVOs.fileDetailVOList}">
+		<li><img src="/upload${myImg.fileStrelc}"
+			alt="${myImg.fileOrginlNm}" style="width: 120px; border-radius: 6px;"></li>
+	</c:forEach> <input id="img" type="file" name="uploadFiles" placeholder="직원 이미지" />
+</td>
+
+<input id="empPassword" type="hidden" name="empPassword"
+	value="${emp2VO.empPassword}" />
+
+<div class="card-body table-responsive p-0">
+	<table class="table table-hover text-nowrap">
+		<tbody>
+			<tr>
+				<td>이름</td>
+				<td>${emp2VO.nm}</td>
+			</tr>
+			<tr>
+				<td>전화번호</td>
+				<td>${emp2VO.telno}</td>
+			</tr>
+			<tr>
+				<td>생년월일</td>
+				<td>${emp2VO.brthdy}</td>
+			</tr>
+			<tr>
+				<td>이메일</td>
+				<td>${emp2VO.email}</td>
+
+			</tr>
+			<tr>
+				<td>주소</td>
+				<td>${emp2VO.adres}</td>
+			</tr>
+			<tr>
+				<td>부서</td>
+				<td><c:choose>
+						<c:when test="${emp2VO.deptCode == 1}">관리사무실</c:when>
+						<c:when test="${emp2VO.deptCode == 2}">시설</c:when>
+						<c:when test="${emp2VO.deptCode == 3}">경비</c:when>
+						<c:otherwise>미정</c:otherwise>
+					</c:choose></td>
+			</tr>
+
+			<tr>
+				<td>재직상태</td>
+				<td><c:choose>
+						<c:when test="${emp2VO.enabled == 1}">재직</c:when>
+						<c:when test="${emp2VO.enabled == 2}">휴직</c:when>
+						<c:when test="${emp2VO.enabled == 3}">퇴사</c:when>
+						<c:otherwise>미정</c:otherwise>
+					</c:choose></td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+
+
+<hr />
+
+<h3>인감</h3>
+<!-- 서명관리 버튼 -->
+<button type="button" class="btn btn-app bg-secondary"
+	data-toggle="modal" data-target="#signModal">인감보기</button>
+</div>
+<a href="/emp/editEmpMyPage/${empId}">수정하러가기</a>
+<!-- 서명 수정 모달 -->
+<div class="modal fade" id="signModal" tabindex="-1" role="dialog"
+	aria-labelledby="signModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content" id="signModalContent">
+			<div class="modal-header">
+				<h4 class="modal-title" id="signModalLabel">등록된 인감</h4>
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">×</span>
+				</button>
+			</div>
+
+			<!-- 모달 안에 multipart/form-data 폼 -->
+			<form id="signForm" enctype="multipart/form-data">
+				<div class="modal-body">
+					<!-- 현재 서명 이미지(있을 때만) -->
+					<c:if test="${not empty signVO and not empty signVO.fileDetailVO}">
+						<img id="currentSignImg"
+							src="/upload${signVO.fileDetailVO.fileStrelc}"
+							alt="${signVO.fileDetailVO.fileOrginlNm}"
+							style="width: 120px; border-radius: 6px; margin-bottom: 10px;">
+					</c:if>
+
+					<!-- 업로드 인풋 & 미리보기 -->
+					<div class="form-group">
+						<label for="SignImg">도장 이미지</label> <input id="SignImg"
+							type="file" name="uploadFiles" class="form-control-file" />
+					</div>
+					<div>이미지미리보기영역</div>
+					<div id="SignImgPreview" style="width: 120px; border-radius: 6px;"></div>
+
+				</div>
+
+				<div class="modal-footer justify-content-between">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<!-- ======================= 인감 생성 버튼 ======================= -->
+					<form method="post" action="/emp/insertSign">
+						<!-- 이미 Sign테이블에 signId가 있다면 serviceImpl에서 반환처리해서 반응이 없어요 -->
+					</form>
+					<!-- ============================================================= -->
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<%@ include file="../include/footer.jsp"%>
+<!-- /// footer 끝 /// -->
+
+
+
+
+
+<script>
+	//프로필이미지 미리보기
+	//e : onchange 이벤트 객체
+	document.addEventListener("DOMContentLoaded", function() {
+		const fileInput = document.getElementById("img");
+		fileInput.addEventListener("change", function(e) {
+			handleImgFileSelect(e, "imgPreview");
+		});
+
+		//1. handleImgFileSelect(e,"#img");
+		function handleImgFileSelect(t, targetId) {
+			//1. 이벤트가 발생 된 타겟 안에 들어있는 이미지 파일들을 가져와보자
+			const files = t.target.files;
+
+			//2. 이미지가 여러개가 있을 수 있으므로 이미지들을 각각 분리해서 배열로 만듦
+			//files : {개똥이.jpg, 개똥삼.jpg, 개똥오.jpg}
+			//fileArr : [개똥이.jpg, 개똥삼.jpg, 개똥오.jpg]
+			const fileArr = Array.prototype.slice.call(files);
+
+			//preview를 초기화하고
+			const container = document.getElementById(targetId);
+			if (!container)
+				return;
+			container.innerHTML = "";
+
+			fileArr.forEach(function(f) {
+				//이미지 파일이 아닌 경우 이미지 미리보기 실패 처리
+				if (!f.type.match("image.*")) {
+					alert("이미지 확장자만 가능합니다");
+					//함수 종료
+					return;
+				}
+
+				//이미지 객체를 읽을 자바스크립트의 reader 객체 생성
+				const reader = new FileReader();
+
+				//e : reader가 이미지 객체를 읽는 이벤트
+				reader.onload = function(e) {
+					const imgl = document.createElement("img");
+
+					//e.target : f(이미지 객체)
+					//e.target.result : reader가 이미지를 다 읽은 결과
+					imgl.src = e.target.result; // data URL
+
+					container.appendChild(imgl);
+				}
+
+				//reader객체로 f(파일 한 개)를 읽음
+				reader.readAsDataURL(f);
+
+				//p 사이에 이미지가 렌더링되어 화면에 보임
+				//객체.append : 누적, .html : 새로고침, .innerHTML : J/S
+			});//end forEach
+
+			/*[참고]******
+			arr.forEach(function(str,idx){
+				console.log("str : " + str);
+			});
+			
+			$.each(arr,function(idx,str){
+				console.log("str[" + idx + "] : " + str);
+			});
+			 */
+
+		}//end handleImgFileSelect
+	});//프로필이미지 미리보기 끝
+
+	//서명 미리보기 시작
+	//t : onchange 이벤트 객체
+	document.addEventListener("DOMContentLoaded", function() {
+		const SignFileInput = document.getElementById("SignImg");
+		SignFileInput.addEventListener("change", function(t) {
+			handleImgFileSelect(t, "SignImgPreview");
+		});
+
+		//1. handleImgFileSelect(e,"#img");
+		function handleImgFileSelect(t, targetId) {
+			//1. 이벤트가 발생 된 타겟 안에 들어있는 이미지 파일들을 가져와보자
+			const files = t.target.files;
+
+			//2. 이미지가 여러개가 있을 수 있으므로 이미지들을 각각 분리해서 배열로 만듦
+			//files : {개똥이.jpg, 개똥삼.jpg, 개똥오.jpg}
+			//fileArr : [개똥이.jpg, 개똥삼.jpg, 개똥오.jpg]
+			const fileArr = Array.prototype.slice.call(files);
+
+			//preview를 초기화하고
+			const container = document.getElementById(targetId);
+			if (!container)
+				return;
+			container.innerHTML = "";
+
+			fileArr.forEach(function(f) {
+				//이미지 파일이 아닌 경우 이미지 미리보기 실패 처리(MIME타입)
+				if (!f.type.match("image.*")) {
+					alert("이미지 확장자만 가능합니다");
+					//함수 종료
+					return;
+				}
+
+				// reader 객체 생성
+				const reader = new FileReader();
+
+				//reader가 이미지 객체를 읽는 이벤트
+				reader.onload = function(t) {
+					const img2 = document.createElement("img");
+
+					//e.target : ㅅ(이미지 객체)
+					//e.target.result : reader가 이미지를 다 읽은 결과
+					img2.src = t.target.result; // data URL
+
+					container.appendChild(img2);
+				}
+
+				//reader객체로 f(파일 한 개)를 읽음
+				reader.readAsDataURL(f);
+
+			});//end forEach
+
+		}//end handleImgFileSelect
+	});//서명 미리보기 끝
+</script>

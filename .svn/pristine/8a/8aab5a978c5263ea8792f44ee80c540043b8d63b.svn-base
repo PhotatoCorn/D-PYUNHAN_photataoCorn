@@ -1,0 +1,9 @@
+package kr.or.ddit.service;
+
+import kr.or.ddit.vo.ContractVO;
+
+public interface ContractService {
+    String getContract(Long id);
+    void saveContract(Long id,String htmlContent);
+    ContractVO postContract(ContractVO contractVO);
+}

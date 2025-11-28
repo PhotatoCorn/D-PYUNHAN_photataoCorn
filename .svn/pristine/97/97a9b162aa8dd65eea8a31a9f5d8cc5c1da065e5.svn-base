@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.CcpyManageMapper">
+	
+	<insert id="postCcpyManageVO" parameterType="ccpyManageVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="ccpyManageId">
+			select NVL(MAX(ccpy_manage_id), 0)+1
+				from ccpy_manage
+		</selectKey>
+		INSERT INTO ccpy_manage (
+		    ccpy_manage_id
+		    ,ccpy_cmpny_nm
+		    ,ccpy_adres
+		    ,ccpy_telno
+		    ,ccpy_rprsntv_nm
+		    ,ccpy_bizrno
+		    ,ccpy_email
+		    ,ccpy_password
+		    ,file_group_sn
+		    ,ccpy_opbiz_de
+		) VALUES (
+		     #{ccpyManageId}
+		     , #{ccpyCmpnyNm}
+		     , #{ccpyAdres}
+		     , #{ccpyTelno}
+		     , #{ccpyRprsntvNm}
+		     , #{ccpyBizrno}
+		     , #{ccpyEmail}
+		     , #{ccpyPassword}
+		     , #{fileGroupSn}S
+		     , #{ccpyOpbizDe}
+		)		
+	</insert>
+	
+	<insert id="postbizcndIndutyVO" parameterType="bizcndIndutyVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="bizcndIndutyId">
+			select NVL(MAX(bizcnd_induty_id), 0)+1
+				from bizcnd_induty
+		</selectKey>
+		INSERT INTO bizcnd_induty (
+		    ccpy_manage_id
+		    , bizcnd_induty_id
+		    , bizcnd_nm
+		    , induty_nm
+		) VALUES (
+		    #{ccpyManageId},
+        	, #{bizcndIndutyId}
+        	, #{bizcndNm}
+        	, #{indutyNm}
+		)		
+	</insert>
+</mapper>

@@ -1,0 +1,24 @@
+package kr.or.ddit.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.or.ddit.mapper.NtcnMapper;
+import kr.or.ddit.service.NtcnService;
+import kr.or.ddit.vo.NtcnVO;
+
+@Service
+public class NtcnServiceImpl implements NtcnService {
+
+	@Autowired
+	NtcnMapper ntcnMapper;
+	
+	//알림테이블 insert
+	@Override
+	public int insertNtcn(NtcnVO ntcnVO) {
+		return this.ntcnMapper.insertNtcn(ntcnVO);
+	}
+}

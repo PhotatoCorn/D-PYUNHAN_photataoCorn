@@ -1,0 +1,225 @@
+package kr.or.ddit.service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.or.ddit.util.NtcnUtil;
+import kr.or.ddit.util.movingAvgStd.MovingAvgStdPoint;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * 검침 데이터 이상치 자동 탐지 스케줄러
+ * 
+ * <p>매일 정해진 시간에 자동으로 검침 데이터의 이상치를 분석하고
+ * 결과를 처리합니다.</p>
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MtinspScheduler {
+
+    private final NtcnUtil ntcnUtil;
+    private final MtinspService mtinspService;  // ← Service만 사용
+    
+    /**
+     * 매일 자정에 전일 검침 데이터 이상치 분석 실행
+     * 
+     * <p>Cron 표현식: "0 0 0 * * *"</p>
+     */
+    @Scheduled(cron = "0 0 0 * * *") // 매일 자정
+    @Transactional
+    public void analyzeDailyAnomalies() {
+        log.info("========== 일일 검침 이상치 분석 시작 ==========");
+        
+        try {
+            // 1. 어제 날짜의 검침 데이터 조회 (Service 사용)
+            LocalDate yesterday = LocalDate.now().minusDays(1);
+            List<MovingAvgStdPoint> dataPoints = 
+                mtinspService.getReadingsByDate(yesterday);
+            
+            if (dataPoints.isEmpty()) {
+                log.warn("어제({}) 검침 데이터가 없습니다.", yesterday);
+                return;
+            }
+            
+            log.info("어제({}) 검침 데이터 {}건 조회됨", yesterday, dataPoints.size());
+            
+            // 2. 이상치 분석 수행
+            List<MovingAvgStdPoint> analyzedData = 
+                mtinspService.detectAnomalies(dataPoints);
+            
+            // 3. 이상치만 필터링
+            List<MovingAvgStdPoint> anomalies = analyzedData.stream()
+                .filter(MovingAvgStdPoint::isAnomaly)
+                .collect(Collectors.toList());
+            
+            log.info("이상치 탐지 완료: 총 {}건 중 {}건 이상 감지", 
+                analyzedData.size(), anomalies.size());
+            
+            // 4. 이상치 데이터 처리
+            if (!anomalies.isEmpty()) {
+                processAnomalies(anomalies);
+            }
+            
+            // 5. 분석 결과 통계 출력
+            printAnalysisLog(analyzedData, anomalies);
+            
+            log.info("========== 일일 검침 이상치 분석 완료 ==========");
+            
+        } catch (Exception e) {
+            log.error("일일 검침 이상치 분석 중 오류 발생", e);
+        }
+    }
+    
+    /**
+     * 매시간 정각에 실시간 검침 데이터 이상치 분석 실행
+     * 
+     * <p>Cron 표현식: "0 0 * * * *"</p>
+     */
+    @Scheduled(cron = "0 0 * * * *") // 매시간 정각
+    @Transactional
+    public void analyzeHourlyAnomalies() {
+        log.info("========== 시간별 검침 이상치 분석 시작 ==========");
+        
+        try {
+            // 최근 1시간 데이터 조회 (Service 사용)
+            List<MovingAvgStdPoint> dataPoints = 
+                mtinspService.getRecentReadings(1);
+            
+            if (dataPoints.isEmpty()) {
+                log.info("최근 1시간 검침 데이터가 없습니다.");
+                return;
+            }
+            
+            log.info("최근 1시간 검침 데이터 {}건 조회됨", dataPoints.size());
+            
+            // 이상치 분석 및 처리
+            List<MovingAvgStdPoint> analyzedData = 
+                mtinspService.detectAnomalies(dataPoints);
+            
+            List<MovingAvgStdPoint> anomalies = analyzedData.stream()
+                .filter(MovingAvgStdPoint::isAnomaly)
+                .collect(Collectors.toList());
+            
+            if (!anomalies.isEmpty()) {
+                log.warn("실시간 이상치 {}건 감지!", anomalies.size());
+                processAnomalies(anomalies);
+            }
+            
+            log.info("========== 시간별 검침 이상치 분석 완료 ==========");
+            
+        } catch (Exception e) {
+            log.error("시간별 검침 이상치 분석 중 오류 발생", e);
+        }
+    }
+    
+    /**
+     * 매주 월요일 오전 9시에 주간 이상치 리포트 생성
+     * 
+     * <p>Cron 표현식: "0 0 9 * * MON"</p>
+     */
+    @Scheduled(cron = "0 0 9 * * MON") // 매주 월요일 오전 9시
+    @Transactional
+    public void generateWeeklyReport() {
+        log.info("========== 주간 이상치 리포트 생성 시작 ==========");
+        
+        try {
+            // 지난주 데이터 조회 (Service 사용)
+            LocalDate lastWeekStart = LocalDate.now().minusWeeks(1);
+            LocalDate lastWeekEnd = LocalDate.now().minusDays(1);
+            
+            List<MovingAvgStdPoint> dataPoints = 
+                mtinspService.getReadingsByDateRange(lastWeekStart, lastWeekEnd);
+            
+            log.info("지난주({} ~ {}) 검침 데이터 {}건 조회됨", 
+                lastWeekStart, lastWeekEnd, dataPoints.size());
+            
+            // 이상치 분석
+            List<MovingAvgStdPoint> analyzedData = 
+                mtinspService.detectAnomalies(dataPoints);
+            
+            List<MovingAvgStdPoint> anomalies = analyzedData.stream()
+                .filter(MovingAvgStdPoint::isAnomaly)
+                .collect(Collectors.toList());
+            
+            // 주간 리포트 생성 및 전송
+            generateAndSendWeeklyReport(analyzedData, anomalies);
+            
+            log.info("========== 주간 이상치 리포트 생성 완료 ==========");
+            
+        } catch (Exception e) {
+            log.error("주간 리포트 생성 중 오류 발생", e);
+        }
+    }
+    
+    /**
+     * 이상치 데이터 처리
+     */
+    private void processAnomalies(List<MovingAvgStdPoint> anomalies) {
+        for (MovingAvgStdPoint anomaly : anomalies) {
+            log.warn("이상치 감지 - 세대: {}, 종류: {}, 사용량: {}, 점수: {}", 
+                anomaly.getHshldId(), 
+                anomaly.getIemNm(), 
+                anomaly.getUsgqty(), 
+                anomaly.getAnomalyScore());
+            
+            // 알림 발송 (필요시)
+            // ntcnUtil.sendUser(...);
+        }
+    }
+    
+    /**
+     * 분석 결과 통계 출력
+     */
+    private void printAnalysisLog(
+            List<MovingAvgStdPoint> analyzedData, 
+            List<MovingAvgStdPoint> anomalies) {
+        
+        long totalCount = analyzedData.size();
+        long anomalyCount = anomalies.size();
+        long normalCount = totalCount - anomalyCount;
+        
+        double anomalyRate = totalCount > 0 
+            ? (double) anomalyCount / totalCount * 100 
+            : 0.0;
+        
+        log.info("분석 통계 - 총: {}건, 정상: {}건, 이상: {}건, 이상률: {:.2f}%",
+            totalCount, normalCount, anomalyCount, anomalyRate);
+    }
+    
+    /**
+     * 주간 리포트 생성 및 전송
+     */
+    private void generateAndSendWeeklyReport(
+            List<MovingAvgStdPoint> analyzedData,
+            List<MovingAvgStdPoint> anomalies) {
+        
+        StringBuilder report = new StringBuilder();
+        report.append("===== 주간 검침 이상치 분석 리포트 =====\n");
+        report.append(String.format("분석 기간: %s ~ %s\n", 
+            LocalDate.now().minusWeeks(1), LocalDate.now().minusDays(1)));
+        report.append(String.format("총 검침 건수: %d건\n", analyzedData.size()));
+        report.append(String.format("이상 감지 건수: %d건\n", anomalies.size()));
+        report.append("\n===== 이상치 상세 =====\n");
+        
+        anomalies.forEach(anomaly -> {
+            report.append(String.format("- [%s] %s %s: %.2f (점수: %.2f)\n",
+                anomaly.getDate(),
+                anomaly.getHshldId(),
+                anomaly.getIemNm(),
+                anomaly.getUsgqty(),
+                anomaly.getAnomalyScore()));
+        });
+        
+        log.info("\n{}", report.toString());
+        
+        // 알림으로 전송
+//        ntcnUtil.sendUser(null, null, null, null, null); // 이 부분 알림 내용 작성 필요
+    }
+}

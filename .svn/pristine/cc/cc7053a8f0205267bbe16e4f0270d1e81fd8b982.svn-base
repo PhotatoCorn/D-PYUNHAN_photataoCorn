@@ -1,0 +1,104 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ include file="../include/header.jsp" %>
+<script type="text/javascript" src="/js/jquery-3.6.0.js"></script>
+
+<h2>📊 월별 검침 데이터</h2>
+<style>
+    body { font-family: sans-serif; margin: 20px; }
+    table { width: 80%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    h2 { color: #333; }
+    .search-form {
+        background-color: #f9f9f9;
+        border: 1px solid #eee;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    .search-form input[type="text"],
+    .search-form input[type="month"] {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .search-form button {
+        padding: 8px 12px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .search-form button:hover { background-color: #0056b3; }
+    .search-form button.reset { background-color: #6c757d; }
+    .search-form button.reset:hover { background-color: #5a6268; }
+</style>
+</head>
+<body>
+
+<h2>세대 검침 이력 (원본 데이터)</h2>
+<div class="search-form">
+    <form action="${pageContext.request.contextPath}/mtinsp/mtinspView" method="get">
+        세대 ID:
+        <input type="text"
+               name="hshldId"
+               value="${searchHshldId}"
+               placeholder="예: 11011001" />
+
+        &nbsp;&nbsp; 검색 월:
+        <input type="month"
+               name="searchMonth"
+               value="${searchMonth}" />
+
+        &nbsp;&nbsp;
+
+        <button type="submit">조회</button>
+
+        <button type="button" class="reset"
+                onclick="location.href='${pageContext.request.contextPath}/mtinsp/history'">
+            전체보기
+        </button>
+    </form>
+</div>
+<table>
+    <thead>
+    <tr>
+        <th>세대번호</th>
+        <th>검침일시</th>
+        <th>구분</th>
+        <th>사용량</th>
+    </tr>
+    </thead>
+    <tbody>
+    <%-- 1. 컨트롤러가 넘겨준 "historyList"가 비어있는지 확인 --%>
+    <c:if test="${empty dataList}">
+        <tr>
+            <td colspan="3">조회된 데이터가 없습니다.</td>
+        </tr>
+    </c:if>
+
+    <%-- 2. "historyList"를 순회하며 <tr> 생성 --%>
+    <c:forEach items="${dataList}" var="item">
+        <tr>
+            <td>${item.hshldId}</td>
+            <td>${item.mtinspDt}</td>
+            <td>${item.iemNm}</td>
+            <td>${item.usgqty}</td>
+                <%-- (MtinspVO에 단위(unit) 같은 게 있다면 <td>${item.unit}</td> 추가) --%>
+        </tr>
+    </c:forEach>
+    </tbody>
+</table>
+
+<%--<div style="margin-top: 40px; border: 1px dashed gray; padding: 20px;">--%>
+<%--    <p>--%>
+<%--        <b>(안내)</b> 이 테이블 데이터를 기반으로--%>
+<%--        <br>--%>
+<%--        이 페이지의 <code>&lt;script&gt;</code> 태그 안에서 Chart.js 등을 이용해 그래프를 그리시면 됩니다.--%>
+<%--    </p>--%>
+<%--</div>--%>
+
+<%@ include file="../include/footer.jsp" %>

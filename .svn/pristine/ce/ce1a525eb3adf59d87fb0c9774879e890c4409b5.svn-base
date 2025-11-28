@@ -1,0 +1,133 @@
+package kr.or.ddit.controller;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import jakarta.servlet.http.HttpSession;
+import kr.or.ddit.service.BdderService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.util.UploadController;
+import kr.or.ddit.vo.BdderVO;
+import kr.or.ddit.vo.BidPblancVO;
+import kr.or.ddit.vo.FileDetailVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Controller
+@Slf4j
+@RequestMapping("/bdder")
+public class BdderController {
+	
+	@Autowired
+	UploadController uploadController;
+	
+	@Autowired
+	BdderService bdderService;
+	
+	@GetMapping("/postBdder")
+	public String postBidder(
+			@RequestParam int bidPblancSn,
+			Model model
+			) {
+		log.info("check : postBdder/bidPblancSn => {}", bidPblancSn);
+		
+		BidPblancVO bidPblancVO = this.bdderService.getBidPblancVO(bidPblancSn);
+		model.addAttribute("now", new Date());
+		model.addAttribute("bidPblancVO", bidPblancVO);
+		
+		return "bdder/postBdder";
+	}
+	
+	@PostMapping("/postBdder")
+	@ResponseBody
+	public Map<String, Object> postBidder(
+			BdderVO bdderVO,
+			@RequestParam("uploadFiles") MultipartFile[] uploadFiles			
+			) {
+		long fileGroupSn = this.uploadController.multiImageUpload(uploadFiles);
+		bdderVO.setFileGroupSn(fileGroupSn);
+		
+		int result = this.bdderService.postBdder(bdderVO);
+		
+		Map<String, Object> map = new HashMap<>();
+		
+		return map;
+	}
+	
+	@GetMapping("/loginBdder")
+	public String loginBidder() {
+		return "bdder/loginBdder";
+	}
+	
+	@PostMapping("/loginBdder")
+	public String getBdder(
+			BdderVO bdderVO,
+			HttpSession session
+			){
+		bdderVO = this.bdderService.getBdderEmail(bdderVO);
+		
+		String bdderEmail = bdderVO.getBdderEmail();
+		String bdderPassword = bdderVO.getBdderPassword();
+		
+		if(bdderEmail != null && !bdderEmail.equals("")) {
+			session.setAttribute("bdderVO", bdderVO);
+			return "redirect:/bdder/getMyBdderList";
+		}
+		return "redirect:/bdder/loginBdder";		
+	}
+	
+	// 신청, 수정, 보안, 취하
+	@GetMapping("/getMyBdderList")
+	public String getMyBidderList(
+			HttpSession session,
+			Model model,
+			@RequestParam(required = false, defaultValue = "") String keyword,
+			@RequestParam(required = false, defaultValue = "1") int currentPage 
+			) {
+		BdderVO bdderVO = (BdderVO) session.getAttribute("bdderVO");
+		log.info("check : session/bdderVO => {}", bdderVO);
+		
+		int size = 10;
+		
+		Map<String, Object> map = new HashMap<>();
+		map.put("bdderEmail", bdderVO.getBdderEmail());
+	    map.put("bdderPassword", bdderVO.getBdderPassword());
+		map.put("currentPage", currentPage);
+		map.put("keyword", keyword);
+		
+		List<BdderVO> myBdderVOList = this.bdderService.getMyBdderList(map); 
+		int total = myBdderVOList.size();
+		
+		ArticlePage<BdderVO> articlePage = new ArticlePage<BdderVO>(total, currentPage, size, myBdderVOList, keyword);
+		
+		model.addAttribute("articlePage", articlePage);
+		return "bdder/getMyBdderList";
+	}
+	
+	@ResponseBody
+	@PostMapping("/getFileDetailVOList")
+	public Map<String, Object> getFileDetailVOList(
+			@RequestBody BdderVO bdderVO
+			){
+		log.info("check : bdderVO.getFileGroupSn => {}", bdderVO.getFileGroupSn());
+		List<FileDetailVO> fileDetailVOList = this.bdderService.getFileDetailVOList(bdderVO.getFileGroupSn());
+		
+		Map<String, Object> map = new HashMap<>();
+		
+		map.put("fileDetailVOList", fileDetailVOList);
+		return map;
+	}
+	
+}

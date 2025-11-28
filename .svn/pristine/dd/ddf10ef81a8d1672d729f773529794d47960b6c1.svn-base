@@ -1,0 +1,22 @@
+package kr.or.ddit.service;
+
+import kr.or.ddit.vo.SignVO;
+
+public interface SignService {
+
+	
+	//selectSign empId를 기준으로 sign사진을 찾기
+	public SignVO selectSign(String empId);	
+	
+	
+	
+    //사인이 없으면 생성하고, 있으면 기존 SIGN_ID 반환 
+    public long ensureSignForEmp(String empId, long fileGroupSn);
+
+
+
+
+	
+	
+	
+}

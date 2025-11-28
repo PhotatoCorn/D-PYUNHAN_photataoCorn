@@ -1,0 +1,600 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+	<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+		<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
+			<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+				<!DOCTYPE html>
+				<html>
+
+				<head>
+
+					<title></title>
+				</head>
+				<style>
+					.drft-table,
+					.sanctnln-table {
+						width: 100%;
+						height: 180px;
+						border-collapse: collapse;
+						border: 2px solid black;
+					}
+
+					.reference-table {
+						width: 100%;
+						height: auto;
+						/* 높이 자동 조절 */
+						border-collapse: collapse;
+						border: 2px solid black;
+						margin-bottom: 20px;
+					}
+
+					.reference-table td {
+						border: 2px solid black;
+						height: 40px;
+						/* 한 줄만 필요하니 40px */
+						text-align: center;
+					}
+
+					.drft-table td,
+					.sanctnln-table td {
+						border: 2px solid black;
+						height: 40px;
+						text-align: center;
+					}
+
+					.drft-table .header,
+					.sanctnln-table .header,
+					.reference-table .header {
+						font-weight: bold;
+					}
+
+					#sanctnlnArea {
+						display: flex;
+						gap: 30px;
+						align-items: flex-start;
+					}
+
+					#sanctnlnArea>div:first-child {
+						flex: 0 0 auto;
+					}
+
+					#sanctnlnArea>div:last-child {
+						flex: 1;
+						min-width: 500px;
+					}
+
+					.drft-table {
+						width: 200px;
+					}
+
+					.sanctnln-table,
+					.reference-table {
+						width: 100%;
+						margin-bottom: 20px;
+					}
+
+					.empVOList {
+						margin-left: 20px;
+						border-left: 2px solid #ddd;
+						padding-left: 10px;
+					}
+
+					.empVOList label {
+						margin-left: 5px;
+					}
+				</style>
+				<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+				<script type="text/javascript" src="/ckeditor5/ckeditor.js"></script>
+				<script type="text/javascript">
+					document.addEventListener("DOMContentLoaded", function () {
+						
+						ClassicEditor
+							.create(document.querySelector('#editor'), {
+								// 에디터 설정
+								toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+								height: '500px',
+								ckfinder: { uploadUrl: '/image/upload' }
+							})
+							.then(editor => {
+								window.editor = editor;
+								editor.enableReadOnlyMode('readOnly');
+								const toolbarElement = editor.ui.view.toolbar.element;
+							    toolbarElement.style.display = 'none';
+							})
+							.catch(error => {
+								console.error("check: editor error => ", error);
+							});
+
+						//기안자 값 넣기
+						document.querySelector("#drftEmpId").value = "${empVO.empId}";
+						document.querySelector("#drftClsfName").value = "${empVO.clsfName}";
+						document.querySelector("#drftNm").value = "${empVO.nm}";
+
+						async function sanctnlnDetail() {
+							try {
+								const elctrnsanctnSn = document.querySelector("#elctrnsanctnSn").value;
+								// 결재선 값 넣기		
+								const data = {
+									"elctrnsanctnSn": elctrnsanctnSn
+								}
+								const response = await axios.post("/elctrnsanctn/getSanctnln", data);
+								response.data.sanctnlnVOList.forEach(sanctnlnVO => {
+									addApproverColumn(sanctnlnVO.empVO, sanctnlnVO.sanctnOrdr);
+								})
+								updateReferenceDisplay(response.data.drftRefrnVOList);
+							} catch (error) {
+								console.log("error => ", error);
+							}
+						}
+						sanctnlnDetail();
+
+						// 결재자 열 추가 함수
+						function addApproverColumn(empVO, sanctnOrdr) {
+							document.querySelector(".tr-sanctnln-ordr").appendChild(createTd(sanctnOrdr));
+							document.querySelector(".tr-clsf").appendChild(createTd(empVO.clsfName));
+							document.querySelector(".tr-nm").appendChild(createTd(empVO.nm));
+
+							const empIdTd = createTd(empVO.empId);
+							empIdTd.dataset.empId = empVO.empId;
+							document.querySelector(".tr-empId").appendChild(empIdTd);
+						}
+						// td 생성 헬퍼 함수
+						function createTd(text) {
+							const td = document.createElement("td");
+							td.className = "data-cell";
+							td.textContent = text;
+							return td;
+						}
+
+						// 참조자 정보 표시 함수
+						function updateReferenceDisplay(drftRefrnVOList) {
+							const refDisplay = document.querySelector("#reference-display");
+
+							if (drftRefrnVOList.length === 0) {
+								refDisplay.textContent = "";
+								refDisplay.dataset.refIds = "";
+								return;
+							}
+
+							let referenceText = "";
+							const refIds = [];
+
+							drftRefrnVOList.forEach((drftRefrnVO, idx) => {
+								const refId = drftRefrnVO.empId;
+								const refName = drftRefrnVO.empVO.nm;
+
+								refIds.push(refId);
+								referenceText += (idx > 0 ? ", " : "") + refName;
+							});
+
+							refDisplay.textContent = referenceText;
+							refDisplay.dataset.refIds = refIds.join(",");
+						}
+
+
+						// 수정 버튼 클릭 이벤트
+						document.querySelector("#editBtn")?.addEventListener("click", function () {
+
+							//버튼 정리
+							document.querySelector("#editBtn").style.display = "none";
+							document.querySelector("#setSanctnlnBtn").removeAttribute("style");
+
+							document.querySelector("#drftSj").removeAttribute("readonly");
+							if (window.editor) {
+								window.editor.disableReadOnlyMode('readOnly');
+								
+								const toolbarElement = window.editor.ui.view.toolbar.element;
+							    toolbarElement.style.display = 'flex';
+							}
+						});
+
+						// 결재선설정 버튼 클릭
+						document.querySelector("#setSanctnlnBtn").addEventListener("click", function () {
+							// 테이블의 모든 data-cell 제거
+							document.querySelector(".tr-sanctnln-ordr").querySelectorAll(".data-cell").forEach(cell => cell.remove());
+							document.querySelector(".tr-clsf").querySelectorAll(".data-cell").forEach(cell => cell.remove());
+							document.querySelector(".tr-nm").querySelectorAll(".data-cell").forEach(cell => cell.remove());
+							document.querySelector(".tr-empId").querySelectorAll(".data-cell").forEach(cell => cell.remove());
+							// 참조 테이블도 초기화
+							const refDisplay = document.querySelector("#reference-display");
+							if (refDisplay) {
+								refDisplay.textContent = "";
+								refDisplay.dataset.refIds = "";
+							}
+						});
+
+						// ==========================모달 JS 시작==========================
+						document.querySelectorAll('#deptEmpTree label').forEach(label => {
+							label.addEventListener('click', function (e) {
+								const forAttr = label.getAttribute('for');
+								if (!forAttr) return;
+
+								const prefix = "dept_";
+								if (!forAttr.startsWith(prefix)) return;
+
+								const deptCode = forAttr.substring(prefix.length);
+
+								const empDiv = document.getElementById('empList_' + deptCode);
+								if (!empDiv) return;
+
+								if (empDiv.style.display === 'none' || empDiv.style.display === '') {
+									empDiv.style.display = 'block';
+								} else {
+									empDiv.style.display = 'none';
+								}
+								e.preventDefault(); // label 기본 클릭 동작 방지
+							});
+						});
+
+						// 부서 체크박스 클릭 시 해당 부서 직원 체크박스 전체 선택/해제
+						document.querySelectorAll('.dept-check').forEach(deptCheck => {
+							deptCheck.addEventListener('change', function (e) {
+								const deptCode = e.target.dataset.dept;
+								const empDiv = document.getElementById("empList_" + deptCode);
+								if (!empDiv) return;
+
+								const empChecks = empDiv.querySelectorAll('input[type="checkbox"]');
+								empChecks.forEach(empChk => {
+									empChk.checked = e.target.checked;
+								});
+							});
+						});
+
+
+						// 결재선 추가 버튼
+						document.querySelector("#sanctnlnAddBtn").addEventListener("click", function () {
+							addEmpsToWrapper("sanctnln", "#sanctnlnWrapper");
+						});
+
+						// 참조 추가 버튼
+						document.querySelector("#referenceAddBtn").addEventListener("click", function () {
+							addEmpsToWrapper("reference", "#referenceWrapper");
+						});
+
+						// 직원을 선택된 영역에 추가하는 통합 함수
+						function addEmpsToWrapper(type, wrapperId) {
+							const checkedEmpCheckboxes = document.querySelectorAll('.empVOList input[type="checkbox"]:checked');
+							const wrapper = document.querySelector(wrapperId);
+
+							checkedEmpCheckboxes.forEach(empChk => {
+								const empId = empChk.id;
+								const elementId = `\${type}_\${empId}`;
+
+								// 중복 체크
+								if (document.getElementById(elementId)) return;
+
+								const empLabel = document.querySelector(`label[for="\${empId}"]`);
+								const empName = empLabel ? empLabel.textContent.trim() : "";
+
+								const empDiv = createEmpElement(elementId, empName, () => {
+									wrapper.removeChild(empDiv);
+									empChk.checked = false;
+
+									// 결재선인 경우만 순서 업데이트
+									if (type === "sanctnln") {
+										updateOrderNumbers();
+									}
+								});
+
+								wrapper.appendChild(empDiv);
+
+								// 결재선인 경우 순서 업데이트
+								if (type === "sanctnln") {
+									updateOrderNumbers();
+								}
+							});
+						}
+
+						// 직원 요소 생성 함수
+						function createEmpElement(id, empName, onRemove) {
+							const empDiv = document.createElement("div");
+							empDiv.id = id;
+							empDiv.style.cssText = "margin-right:8px; padding:2px 5px; border:1px solid #aaa; border-radius:4px; display:inline-block; user-select:none;";
+
+							// 순서를 표시할 div (sanctnln인 경우만)
+							const orderDiv = document.createElement("div");
+							orderDiv.className = "sanctnlnOrdr";
+							orderDiv.style.cssText = "display:inline; margin-right:4px; font-weight:bold;";
+							orderDiv.textContent = ""; // 나중에 updateOrderNumbers에서 설정
+
+							// 직원 이름을 표시할 div
+							const nameDiv = document.createElement("div");
+							nameDiv.className = "empName";
+							nameDiv.style.cssText = "display:inline;";
+							nameDiv.textContent = empName;
+
+							// 삭제 버튼
+							const removeBtn = document.createElement("button");
+							removeBtn.type = "button";
+							removeBtn.className = "removeBtn";
+							removeBtn.style.marginLeft = "4px";
+							removeBtn.textContent = "x";
+							removeBtn.addEventListener("click", (e) => {
+								e.preventDefault();
+								onRemove();
+							});
+
+							empDiv.appendChild(orderDiv);
+							empDiv.appendChild(nameDiv);
+							empDiv.appendChild(removeBtn);
+
+							return empDiv;
+						}
+
+						// 결재선 순서번호 업데이트
+						function updateOrderNumbers() {
+							document.querySelectorAll("#sanctnlnWrapper > div").forEach((div, idx) => {
+								let orderDiv = div.querySelector(".sanctnlnOrdr");
+
+								if (!orderDiv) {
+									orderDiv = document.createElement("div");
+									orderDiv.className = "sanctnlnOrdr";
+									orderDiv.style.cssText = "display:inline; margin-right:4px; font-weight:bold;";
+									div.insertBefore(orderDiv, div.firstChild);
+								}
+
+								// [1], [2] 형태가 아니라 1, 2 형태로 저장
+								orderDiv.textContent = (idx + 1);
+							});
+						}
+
+						//confirmBtn 클릭 이벤트
+						document.querySelector("#confirmBtn").addEventListener("click", function () {
+							addSanctnlnToTable()
+							document.querySelector("#setSanctnln [data-dismiss='modal']").click();
+						});
+
+						function addSanctnlnToTable() {
+							const sanctnlnDivs = document.querySelectorAll("#sanctnlnWrapper > div");
+							const referenceDivs = document.querySelectorAll("#referenceWrapper > div");
+
+							// 결재자 정보 추가
+							sanctnlnDivs.forEach((div, index) => {
+								const empInfo = parseEmpInfo(div);
+								addApproverColumn(empInfo, index + 1);
+							});
+
+							// 참조자 정보 표시
+							updRfrnDisplay(referenceDivs);
+						}
+
+						function parseEmpInfo(div) {
+							const empId = div.id.replace("sanctnln_", "");
+							const empLabel = document.querySelector(`label[for="\${empId}"]`);
+							const fullText = empLabel ? empLabel.textContent.trim() : "";
+
+							const parts = fullText.split(/\s+/);
+							const nm = parts[0] || "";
+							const clsfName = parts[1] || "";
+
+							console.log("empId: ", empId, "nm: ", nm, "clsfName: ", clsfName);
+
+							return { empId, nm, clsfName };
+						}
+
+						function updRfrnDisplay(referenceDivs) {
+							const refDisplay = document.querySelector("#reference-display");
+
+							if (referenceDivs.length === 0) {
+								refDisplay.textContent = "";
+								refDisplay.dataset.refIds = "";
+								return;
+							}
+
+							let referenceText = "";
+							const refIds = [];
+
+							referenceDivs.forEach((div, index) => {
+								const refId = div.id.replace("reference_", "");
+								const refName = div.querySelector(".empName")?.textContent.trim() || "";
+
+								refIds.push(refId);
+								referenceText += (index > 0 ? ", " : "") + refName;
+							});
+
+							refDisplay.textContent = referenceText;
+							refDisplay.dataset.refIds = refIds.join(",");
+						}
+						// ==========================모달 JS 끝==========================
+
+						//submit버튼 클릭
+						document.querySelector("#submitBtn")?.addEventListener("click", function () {
+							if (window.editor) {
+                                const editorData = window.editor.getData();
+                                document.querySelector("#editor").value = editorData;
+                            }
+
+							const sanctnlnData = [];
+                            const ordrCells = document.querySelectorAll(".tr-sanctnln-ordr .data-cell");
+                            const empIdCells = document.querySelectorAll(".tr-empId .data-cell");
+                            
+                            ordrCells.forEach((cell, index) => {
+                                const order = cell.textContent.trim();
+                                const empId = empIdCells[index].getAttribute("data-emp-id") || empIdCells[index].textContent.trim();
+
+                                sanctnlnData.push({ "sanctnOrdr": order, "empId": empId });
+                            });
+                            
+                            document.querySelector("#sanctnlnList").value = JSON.stringify(sanctnlnData);
+
+							const refDisplay = document.querySelector("#reference-display");
+                            const refIds = refDisplay.dataset.refIds || "";  // "emp1,emp2,emp3" 형태
+							console.log("check : refIds => ", refIds);
+                            
+                            const referenceData = refIds ? refIds.split(",").map(id => ({ "empId": id.trim() })) : [];
+                            document.querySelector("#referenceList").value = JSON.stringify(referenceData);
+                            
+							document.querySelector("#drftTmprstre").value = 0;
+
+                            const form = document.querySelector("#elctrnsanctnForm");
+                            form.action = "/elctrnsanctn/postElctrnsanctnFromTmpr";
+                            form.method = "post";
+                            form.submit();
+						});// submit버튼 클릭
+						
+						documet.querySelector()
+					})
+				</script>
+
+				<body>
+					<%@ include file="../include/header.jsp" %>
+
+						<div class="jumbotron">
+							<div class="container">
+								<h1 class="display-3">전자 결재 상세</h1>								
+							</div>
+						</div>
+
+						<!--/// body /// -->
+						<form id="elctrnsanctnForm">
+							<div>
+								<h3>기본 설정</h3>
+								<input type="hidden" id="elctrnsanctnSn" name="elctrnsanctnSn" value="${elctrnsanctnVO.elctrnsanctnSn }">
+								<table border="1">
+									<tr>
+										<td>문서 종류</td>
+										<td>${drftDocVO.elctrnsanctnManageVO.sanctnSecode}</td>
+										<td>${drftDocVO.drftDocNm}</td>
+										<td>기안자 <input type="hidden" id="empId" name="empId" value="${empVO.empId}">
+										</td>
+										<td>${empVO.nm}</td>
+									</tr>
+									<tr>
+										<td>등록 일시</td>
+										<td>
+											<fmt:formatDate value="${elctrnsanctnVO.creatDt}" pattern="yyyy-MM-dd" />
+										</td>
+										<td>기안 일시</td>
+										<td>
+											<fmt:formatDate value="${elctrnsanctnVO.drftDt}" pattern="yyyy-MM-dd" />
+										</td>
+										<td>
+											${elctrnsanctnVO.drftTmprstreStts}
+										</td>
+									</tr>
+								</table>
+								<!-- 기안_문서 -->
+							</div>
+														
+							<c:if test="${elctrnsanctnVO.drftTmprstre == 1 && elctrnsanctnVO.empId == empVO.empId}">
+								<div id="btns">
+									<input type="button" id="editBtn" value="수정하기">
+									<input type="button" id="submitBtn" value="기안하기">
+									<input type="button" id="submitBtn" value="미리인쇄보기">
+									<input type="button" id="deleteBtn" value="삭제">
+								</div>
+							</c:if>
+							
+							<div>
+								<h3>결재선</h3>
+								<a href="#setSanctnln" data-toggle="modal" id="setSanctnlnBtn"
+									class="btn btn-primary btn-sm setSanctnln" style="display: none;">결재선설정</a>
+								<div id="sanctnlnArea">
+									${drftDocVO.drftDocFormat}									
+								</div>
+							</div>
+
+							<div>
+								<h3>상세 입력</h3>
+								<div id="drftCnArea">
+									<p>제목</p>
+									<input type="text" value="${elctrnsanctnVO.drftSj}" id="drftSj" name="drftSj" readonly="readonly">
+									<p>본문</p>
+									<textarea id="editor" name="drftCn">${elctrnsanctnVO.drftCn}</textarea>
+								</div>
+							</div>
+							<input type="hidden" name="sanctnlnList" id="sanctnlnList"> 
+							<input type="hidden" name="referenceList" id="referenceList">
+							<input type="hidden" name="drftTmprstre" id="drftTmprstre">
+						</form>
+						
+
+						<!-- /// body /// -->
+						<!-- 결재선 모달 -->
+						<div class="modal" id="setSanctnln">
+							<div class="modal-content">
+								<!-- 모달 헤더 -->
+								<div class="modal-header">
+									<h2>결재선 설정</h2>
+									<button class="close-btn" data-dismiss="modal">&times;</button>
+								</div>
+
+								<!-- 모달 바디 -->
+								<div class="modal-body">
+									<!-- 조직도 영역 -->
+									<div id="deptEmpSection">
+										<div id="searchBox">
+											<input type="text" placeholder="이름, 조직 검색">
+											<button id="searchBtn">🔍</button>
+											<button id="refreshBtn">🔄</button>
+										</div>
+
+										<div id="deptEmpTree">
+											<c:forEach var="deptVO" items="${deptVOList}">
+												<c:choose>
+													<c:when
+														test="${not empty deptVO.empVOList and deptVO.empVOList[0].nm != null}">
+														<input type="checkbox" class="dept-check"
+															id="dept_${deptVO.deptCode}"
+															data-dept="${deptVO.deptCode}" />
+														<label for="dept_${deptVO.deptCode}">${deptVO.deptNm
+															}</label>
+														<div class="empVOList" id="empList_${deptVO.deptCode}"
+															style="display: none;">
+															<c:forEach var="empVO" items="${deptVO.empVOList }">
+																<input type="checkbox" id="${empVO.empId}" />
+																<label for="${empVO.empId}">${empVO.nm}
+																	${empVO.clsfName }</label>
+																<br />
+															</c:forEach>
+														</div>
+													</c:when>
+													<c:otherwise>
+														<input type="checkbox" class="dept-check"
+															id="dept_${deptVO.deptCode}" data-dept="${deptVO.deptCode}"
+															disabled />
+														<label for="dept_${deptVO.deptCode}">${deptVO.deptNm
+															}</label>
+													</c:otherwise>
+												</c:choose>
+												<hr />
+											</c:forEach>
+										</div>
+									</div>
+
+									<!-- 결재 단계 버튼 -->
+									<div id="sanctnlnBtnSection">
+										<button id="sanctnlnAddBtn">결재</button>
+										<button id="referenceAddBtn">참조</button>
+									</div>
+
+									<!-- 선택된 결재선 영역 -->
+									<div id="sanctnlnSection">
+										<div id="bkmkSanctnlnBox">
+											<select id="bkmkSanctnlnSelect">
+												<option>자주 쓰는 결재선</option>
+											</select>
+										</div>
+
+										<div style="border: 1px solid black; height: 100px;" id="sanctnlnWrapper"></div>
+
+										<!-- 참조 영역 -->
+										<div id="referenceSection">
+											<label>참조</label>
+											<div style="border: 1px solid black; height: 100px;" id="referenceWrapper">
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- 모달 푸터 -->
+								<div class="modal-footer">
+									<button id="confirmBtn">확인</button>
+									<button type="button" data-dismiss="modal">Close</button>
+								</div>
+							</div>
+						</div>
+
+						<%@ include file="../include/footer.jsp" %>
+				</body>
+
+				</html>

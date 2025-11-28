@@ -1,0 +1,27 @@
+package kr.or.ddit.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import kr.or.ddit.vo.SignVO;
+@Mapper
+public interface SignMapper {
+
+	
+	//selectSign empId를 기준으로 sign사진을 찾기
+	public SignVO selectSign(String empId);
+	
+	/*signId가없으면 생성하는 로직 findEmpId, findSignIdByEmpId, insertSign*/
+	// EMP_ID로 이미 SIGN이 있는확인 (count)
+	int  findEmpId(String empId);
+	// 있으면 해당 SIGN_ID 조회
+	Long findSignIdByEmpId(String empId);
+	// 새 SIGN 생성 (selectKey: MAX+1)
+	int  insertSign(SignVO signVO);
+		
+	
+	//sign사진 등록[부모]
+	public int empSignEdit(SignVO signVO);
+	
+	
+	
+}

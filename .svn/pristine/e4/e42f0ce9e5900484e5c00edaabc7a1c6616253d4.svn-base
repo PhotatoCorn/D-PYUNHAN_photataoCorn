@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.ddit.mapper.ContractMapper">
+    <resultMap id="contractMap" type="contractVO">
+        <result property="id" column="id" />
+        <result property="content" column="content" jdbcType="CLOB" javaType="java.lang.String" />
+        <result property="title" column="title" />
+    </resultMap>
+    <select id="getContractById" parameterType="long" resultMap="contractMap">
+        SELECT
+            id, content, title
+        FROM
+            contract_table
+        WHERE
+            id = #{id}
+    </select>
+
+    <update id="updateContract" parameterType="contractVO">
+        UPDATE contract_table
+        SET
+            content = #{content}
+        WHERE
+            id = #{id}
+    </update>
+
+    <insert id="postContract" parameterType="contractVO">
+    <selectKey keyProperty="id" resultType="long" order="BEFORE">
+        SELECT CONTRACT_TABLE_SEQ.NEXTVAL FROM DUAL
+    </selectKey>
+
+    INSERT INTO CONTRACT_TABLE (id, title, content)
+    VALUES (#{id}, #{title}, #{content}) -- 위에서 채워진 ID 사용
+    </insert>
+
+
+
+</mapper>
